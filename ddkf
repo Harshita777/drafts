@@ -1,0 +1,63 @@
+  {
+ 
+    "from" : [
+        {
+            "accountname":"new account",
+            "accountnumber":"0000098766",
+            "balance": "130,600,00.00 AED"
+            "branch":"embd"
+        }
+    ]
+ 
+    "to" : [
+        {
+            "accountname":"new account",
+            "accountnumber":"0000098766",
+            "balance": "130,600,00.00 AED"
+            "branch":"embd"
+        }
+    ]
+ 
+    "deal-referance" : [
+        {
+            "reference code":"234.37 USD",
+            "deal code":"300.00 AED",
+        }
+    ]
+ 
+    "payment" : [
+        {
+            "payment benifercy":"1000.00 AED",
+            "Debit account":"2",
+            "changetype": "",
+            "payment-date" "Today , 10 july 2024",
+            "value-date" "Today , 10 july 2024",
+        }
+    ]
+ 
+    "sender-details" : [
+        {
+            "bankname":"hdfc",
+            "bankdetail":"UAE",
+        }
+    ]
+ 
+     "intermidiate-bank-details" : [
+        {
+            "bankname":"hdfc",
+            "bankdetail":"UAE",
+        }
+    ]
+ 
+     "additional-details" : [
+        {
+            "purpose":"agency communicatiomn",
+            "paymentdetail":"UAE",
+            "customerreference":"",
+            "autheriour":""
+        }
+    ] 
+
+ 
+ 
+}
