@@ -423,3 +423,169 @@ const App = () => {
 
 export default App;
 
+
+
+
+
+
+
+
+import React, { ReactNode, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { FETCH_DASHBOARD_REQUEST, FETCH_TRANSACTION_REQUEST } from '../../Redux/Actions/DashboardActions';
+
+// Define the types for the structure of the data
+interface AccountDetails {
+  accountname: string;
+  accountnumber: string;
+  balance: string;
+  branch: string;
+}
+
+interface DealReference {
+  "reference code": string;
+  "deal code": string;
+}
+
+interface PaymentDetails {
+  "payment benifercy": string;
+  "Debit account": string;
+  changetype: string;
+  "payment-date": string;
+  "value-date": string;
+}
+
+interface BankDetails {
+  bankname: string;
+  bankdetail: string;
+}
+
+interface AdditionalDetails {
+  purpose: string;
+  paymentdetail: string;
+  customerreference: string;
+  autheriour: string;
+}
+
+interface TransactionState {
+  from?: AccountDetails[];
+  to?: AccountDetails[];
+  deal_referance?: DealReference[];
+  payment?: PaymentDetails[];
+  sender_details?: BankDetails[];
+  intermidiate_bank_details?: BankDetails[];
+  additional_details?: AdditionalDetails[];
+}
+
+// Card component with explicit typing for children
+const Card = ({ children }: { children: ReactNode }) => (
+  <div className="bg-white shadow-md rounded-lg p-6 mb-4">{children}</div>
+);
+
+const PaymentDetails: React.FC = () => {
+    const dispatch = useDispatch();
+  // Type the state from useSelector
+  const transactionState = useSelector((state: any) => state.transactionReducer) as TransactionState;
+  useEffect(() => {
+    dispatch({ type: FETCH_DASHBOARD_REQUEST });
+    dispatch({ type: FETCH_TRANSACTION_REQUEST });
+  }, [dispatch]);
+  const { 
+    from = [], 
+    to = [], 
+    deal_referance = [], 
+    payment = [], 
+    sender_details = [], 
+    intermidiate_bank_details = [], 
+    additional_details = [] 
+  } = transactionState || {};
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <Card>
+        <div className="flex justify-between mb-4">
+          {from.map((sender, index) => (
+            <div key={index}>
+              <h3 className="text-xl font-semibold">From</h3>
+              <p>{sender.accountname}</p>
+              <p>Account Number: {sender.accountnumber}</p>
+              <p>Balance: {sender.balance}</p>
+              <p>Branch: {sender.branch}</p>
+            </div>
+          ))}
+          {to.map((recipient, index) => (
+            <div key={index}>
+              <h3 className="text-xl font-semibold">To</h3>
+              <p>{recipient.accountname}</p>
+              <p>Account Number: {recipient.accountnumber}</p>
+              <p>Balance: {recipient.balance}</p>
+              <p>Branch: {recipient.branch}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="text-xl font-semibold mb-4">Deal Reference</h3>
+        <div className="grid grid-cols-2 gap-4">
+          {deal_referance.map((deal, index) => (
+            <div key={index}>
+              <p>Deal Reference Code: {deal["reference code"]}</p>
+              <p>Deal Code: {deal["deal code"]}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="text-xl font-semibold mb-4">Payment Details</h3>
+        <div className="grid grid-cols-2 gap-4">
+          {payment.map((pay, index) => (
+            <div key={index}>
+              <p>Payment to Beneficiary: {pay["payment benifercy"]}</p>
+              <p>Debit Account: {pay["Debit account"]}</p>
+              <p>Payment Date: {pay["payment-date"]}</p>
+              <p>Value Date: {pay["value-date"]}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="text-xl font-semibold mb-4">Bank Details</h3>
+        <div className="grid grid-cols-2 gap-4">
+          {sender_details.map((senderDetail, index) => (
+            <div key={index}>
+              <h4 className="font-semibold">Sender Details</h4>
+              <p>Bank Name: {senderDetail.bankname}</p>
+              <p>Bank Detail: {senderDetail.bankdetail}</p>
+            </div>
+          ))}
+          {intermidiate_bank_details.map((intermediateDetail, index) => (
+            <div key={index}>
+              <h4 className="font-semibold">Intermediate Bank Details</h4>
+              <p>Bank Name: {intermediateDetail.bankname}</p>
+              <p>Bank Detail: {intermediateDetail.bankdetail}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <h3 className="text-xl font-semibold mb-4">Additional Details</h3>
+        {additional_details.map((detail, index) => (
+          <div key={index}>
+            <p>Purpose: {detail.purpose}</p>
+            <p>Payment Detail: {detail.paymentdetail}</p>
+            <p>Customer Reference: {detail.customerreference}</p>
+            <p>Authorizer: {detail.autheriour}</p>
+          </div>
+        ))}
+      </Card>
+    </div>
+  );
+};
+
+export default PaymentDetails;
+
+
