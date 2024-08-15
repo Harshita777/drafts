@@ -589,3 +589,36 @@ const PaymentDetails: React.FC = () => {
 export default PaymentDetails;
 
 
+
+
+
+
+const transactionReducer = (state = initialStateTrans, action: any) => {
+  switch (action.type) {
+    case FETCH_TRANSACTION_REQUEST:
+      return {
+        ...state,
+        loading: true,
+        error: null,
+      };
+
+    case FETCH_TRANSACTION_SUCCESS:
+      console.log('Action Payload:', action.payload);
+      return {
+        ...state,
+        loading: false,
+        ...action.payload, // Spread the response payload directly into the state
+      };
+
+    case FETCH_TRANSACTION_FAILURE:
+      return {
+        ...state,
+        loading: false,
+        error: action.payload,
+      };
+
+    default:
+      return state;
+  }
+};
+
