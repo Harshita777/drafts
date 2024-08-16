@@ -1,624 +1,286 @@
-  {
- 
-    "from" : [
-        {
-            "accountname":"new account",
-            "accountnumber":"0000098766",
-            "balance": "130,600,00.00 AED"
-            "branch":"embd"
-        }
-    ]
- 
-    "to" : [
-        {
-            "accountname":"new account",
-            "accountnumber":"0000098766",
-            "balance": "130,600,00.00 AED"
-            "branch":"embd"
-        }
-    ]
- 
-    "deal-referance" : [
-        {
-            "reference code":"234.37 USD",
-            "deal code":"300.00 AED",
-        }
-    ]
- 
-    "payment" : [
-        {
-            "payment benifercy":"1000.00 AED",
-            "Debit account":"2",
-            "changetype": "",
-            "payment-date" "Today , 10 july 2024",
-            "value-date" "Today , 10 july 2024",
-        }
-    ]
- 
-    "sender-details" : [
-        {
-            "bankname":"hdfc",
-            "bankdetail":"UAE",
-        }
-    ]
- 
-     "intermidiate-bank-details" : [
-        {
-            "bankname":"hdfc",
-            "bankdetail":"UAE",
-        }
-    ]
- 
-     "additional-details" : [
-        {
-            "purpose":"agency communicatiomn",
-            "paymentdetail":"UAE",
-            "customerreference":"",
-            "autheriour":""
-        }
-    ] 
-
- 
- 
-}
-
-
-
-
-
-
-
-
-
-const initialState = {
-  from: [],
-  to: [],
-  dealReference: [],
-  payment: [],
-  senderDetails: [],
-  intermediateBankDetails: [],
-  additionalDetails: [],
-  loading: false,
-  error: null,
-};
-
-const transactionReducer = (state = initialState, action) => {
-  switch (action.type) {
-    case FETCH_TRANSACTION_REQUEST:
-      return {
-        ...state,
-        loading: true,
-      };
-    case FETCH_TRANSACTION_SUCCESS:
-      return {
-        ...state,
-        loading: false,
-        from: action.payload.from || [],
-        to: action.payload.to || [],
-        dealReference: action.payload["deal-referance"] || [],
-        payment: action.payload.payment || [],
-        senderDetails: action.payload["sender-details"] || [],
-        intermediateBankDetails: action.payload["intermidiate-bank-details"] || [],
-        additionalDetails: action.payload["additional-details"] || [],
-      };
-    case FETCH_TRANSACTION_FAILURE:
-      return {
-        ...state,
-        loading: false,
-        error: action.payload,
-      };
-    default:
-      return state;
-  }
-};
-
-export { transactionReducer };
-
-
-
-
-
-
-
-import { call, put, takeLatest } from 'redux-saga/effects';
-import { TransactionApi } from '../../Services/TransactionServices';
-import {
-  FETCH_TRANSACTION_REQUEST,
-  FETCH_TRANSACTION_SUCCESS,
-  FETCH_TRANSACTION_FAILURE,
-} from '../Actions/TransactionActions';
-
-// Create an instance of TransactionApi
-const transactionApi = new TransactionApi();
-
-// Worker Saga
-function* fetchTransaction(): Generator<any, void, any> {
-  try {
-    const response = yield call(() => transactionApi.fetchTransactionData());
-    const data = response.data;
-
-    console.log('Transaction Data:', data); 
-    yield put({ type: FETCH_TRANSACTION_SUCCESS, payload: data });
-  } catch (error: any) {
-    yield put({ type: FETCH_TRANSACTION_FAILURE, payload: error.message });
-  }
-}
-
-// Watcher Saga
-function* watchFetchTransaction() {
-  yield takeLatest(FETCH_TRANSACTION_REQUEST, fetchTransaction);
-}
-
-export default watchFetchTransaction;
-
-
-
-
-
-
-
-
-// From DTO
-export interface FromDTO {
-  accountname: string;
-  accountnumber: string;
-  balance: string;
-  branch: string;
-}
-
-// To DTO
-export interface ToDTO {
-  accountname: string;
-  accountnumber: string;
-  balance: string;
-  branch: string;
-}
-
-// Deal Reference DTO
-export interface DealReferenceDTO {
-  referenceCode: string;
-  dealCode: string;
-}
-
-// Payment DTO
-export interface PaymentDTO {
-  paymentBeneficiary: string;
-  debitAccount: string;
-  chargeType: string;
-  paymentDate: string;
-  valueDate: string;
-}
-
-// Sender Correspondent Details DTO
-export interface SenderDetailsDTO {
-  bankName: string;
-  bankDetail: string;
-}
-
-// Intermediate Bank Details DTO
-export interface IntermediateBankDetailsDTO {
-  bankName: string;
-  bankDetail: string;
-}
-
-// Additional Details DTO
-export interface AdditionalDetailsDTO {
-  purpose: string;
-  paymentDetail: string;
-  customerReference: string;
-  authorizer: string;
-}
-
-
-
-export interface TransactionDTO {
-  from: FromDTO[];
-  to: ToDTO[];
-  dealReference: DealReferenceDTO[];
-  payment: PaymentDTO[];
-  senderDetails: SenderDetailsDTO[];
-  intermediateBankDetails: IntermediateBankDetailsDTO[];
-  additionalDetails: AdditionalDetailsDTO[];
-}
-
-
-
-
-// TransactionApi.ts
-import { httpGet } from "./httpServices";
-import { TransactionDTO } from "./TransactionDTO";
-
-export class TransactionApi {
-    private baseUrl = "http://localhost:5000";
-
-    public async fetchTransactionData(): Promise<TransactionDTO> {
-        return await httpGet<TransactionDTO>(`${this.baseUrl}/transaction`, false);
-    }
-}
-
-
-
-
-
-
-import React from 'react';
-
-const App = () => {
-  const data = {
-    from: [
-      {
-        accountname: "new account",
-        accountnumber: "0000098766",
-        balance: "130,600,00.00 AED",
-        branch: "embd"
-      }
-    ],
-    to: [
-      {
-        accountname: "new account",
-        accountnumber: "0000098766",
-        balance: "130,600,00.00 AED",
-        branch: "embd"
-      }
-    ],
-    "deal-referance": [
-      {
-        "reference code": "234.37 USD",
-        "deal code": "300.00 AED"
-      }
-    ],
-    payment: [
-      {
-        "payment benifercy": "1000.00 AED",
-        "Debit account": "2",
-        changetype: "",
-        "payment-date": "Today , 10 july 2024",
-        "value-date": "Today , 10 july 2024"
-      }
-    ],
-    "sender-details": [
-      {
-        bankname: "hdfc",
-        bankdetail: "UAE"
-      }
-    ],
-    "intermidiate-bank-details": [
-      {
-        bankname: "hdfc",
-        bankdetail: "UAE"
-      }
-    ],
-    "additional-details": [
-      {
-        purpose: "agency communicatiomn",
-        paymentdetail: "UAE",
-        customerreference: "",
-        autheriour: ""
-      }
-    ]
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      {/* Sender & Beneficiary Section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Select Sender & Beneficiary from the list below</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="border rounded-lg p-4">
-            <h3 className="font-semibold text-lg">From</h3>
-            <p>{data.from[0].accountname}</p>
-            <p>Current Account: {data.from[0].accountnumber}</p>
-            <p>Available Balance: <strong>{data.from[0].balance}</strong></p>
-            <p>{data.from[0].branch}</p>
-            <a href="#" className="text-blue-500">Change</a>
-          </div>
-          <div className="border rounded-lg p-4">
-            <h3 className="font-semibold text-lg">To</h3>
-            <p>{data.to[0].accountname}</p>
-            <p>Current Account: {data.to[0].accountnumber}</p>
-            <p>Available Balance: <strong>{data.to[0].balance}</strong></p>
-            <p>{data.to[0].branch}</p>
-            <a href="#" className="text-blue-500">Change</a>
-          </div>
-        </div>
-      </div>
-
-      {/* Deal Reference Section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Deal Reference</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p>Deal Reference Code</p>
-            <p className="text-gray-700">{data["deal-referance"][0]["reference code"]}</p>
-          </div>
-          <div>
-            <p>Deal Code</p>
-            <p className="text-gray-700">{data["deal-referance"][0]["deal code"]}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Details Section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Payment Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p>Payment to Beneficiary</p>
-            <p className="text-gray-700">{data.payment[0]["payment benifercy"]}</p>
-          </div>
-          <div>
-            <p>Debit Account</p>
-            <p className="text-gray-700">{data.payment[0]["Debit account"]}</p>
-          </div>
-          <div>
-            <p>Charge Type</p>
-            <p className="text-gray-700">{data.payment[0].changetype || "N/A"}</p>
-          </div>
-          <div>
-            <p>Payment Date</p>
-            <p className="text-gray-700">{data.payment[0]["payment-date"]}</p>
-          </div>
-          <div>
-            <p>Value Date</p>
-            <p className="text-gray-700">{data.payment[0]["value-date"]}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Sender Correspondent Details Section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Sender Correspondent Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p>Bank Name</p>
-            <p className="text-gray-700">{data["sender-details"][0].bankname}</p>
-          </div>
-          <div>
-            <p>Bank Details</p>
-            <p className="text-gray-700">{data["sender-details"][0].bankdetail}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Intermediate Bank Details Section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Intermediate Bank Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p>Bank Name</p>
-            <p className="text-gray-700">{data["intermidiate-bank-details"][0].bankname}</p>
-          </div>
-          <div>
-            <p>Bank Details</p>
-            <p className="text-gray-700">{data["intermidiate-bank-details"][0].bankdetail}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Additional Details Section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold mb-4">Additional Details</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p>Purpose</p>
-            <p className="text-gray-700">{data["additional-details"][0].purpose}</p>
-          </div>
-          <div>
-            <p>Payment Detail</p>
-            <p className="text-gray-700">{data["additional-details"][0].paymentdetail}</p>
-          </div>
-          <div>
-            <p>Customer Reference</p>
-            <p className="text-gray-700">{data["additional-details"][0].customerreference || "N/A"}</p>
-          </div>
-          <div>
-            <p>Authorizer</p>
-            <p className="text-gray-700">{data["additional-details"][0].autheriour || "N/A"}</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default App;
-
-
-
-
-
-
-
-
-import React, { ReactNode, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FETCH_DASHBOARD_REQUEST, FETCH_TRANSACTION_REQUEST } from '../../Redux/Actions/DashboardActions';
+import { FETCH_DASHBOARD_REQUEST, FETCH_PENDING_REQUEST, FETCH_TRANSACTION_REQUEST } from '../../Redux/Actions/DashboardActions';
+import {
+  Box, Text, Card, Tag, Button, IconButton, Div
+} from "@enbdleap/react-ui";
+import { Grid, GridTable } from '@enbdleap/react-ui';
+import { useNavigate } from 'react-router-dom'
+import { ChevronRightSmall } from '@enbdleap/react-icons'
 
-// Define the types for the structure of the data
-interface AccountDetails {
-  accountname: string;
-  accountnumber: string;
-  balance: string;
-  branch: string;
-}
-
-interface DealReference {
-  "reference code": string;
-  "deal code": string;
-}
-
-interface PaymentDetails {
-  "payment benifercy": string;
-  "Debit account": string;
-  changetype: string;
-  "payment-date": string;
-  "value-date": string;
-}
-
-interface BankDetails {
-  bankname: string;
-  bankdetail: string;
-}
-
-interface AdditionalDetails {
-  purpose: string;
-  paymentdetail: string;
-  customerreference: string;
-  autheriour: string;
-}
-
-interface TransactionState {
-  from?: AccountDetails[];
-  to?: AccountDetails[];
-  deal_referance?: DealReference[];
-  payment?: PaymentDetails[];
-  sender_details?: BankDetails[];
-  intermidiate_bank_details?: BankDetails[];
-  additional_details?: AdditionalDetails[];
-}
-
-// Card component with explicit typing for children
-const Card = ({ children }: { children: ReactNode }) => (
-  <div className="bg-white shadow-md rounded-lg p-6 mb-4">{children}</div>
-);
-
-const PaymentDetails: React.FC = () => {
-    const dispatch = useDispatch();
-  // Type the state from useSelector
-  const transactionState = useSelector((state: any) => state.transactionReducer) as TransactionState;
+const Dashboard = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate()
+  const dashboardState = useSelector((state: any) => state.dashboardReducer);
+  const pendingState = useSelector((state: any) => state.pendingReducer);
   useEffect(() => {
     dispatch({ type: FETCH_DASHBOARD_REQUEST });
-    dispatch({ type: FETCH_TRANSACTION_REQUEST });
+    dispatch({ type: FETCH_PENDING_REQUEST });
   }, [dispatch]);
-  const { 
-    from = [], 
-    to = [], 
-    deal_referance = [], 
-    payment = [], 
-    sender_details = [], 
-    intermidiate_bank_details = [], 
-    additional_details = [] 
-  } = transactionState || {};
 
+  const handleRefresh = () => {
+    dispatch({ type: FETCH_DASHBOARD_REQUEST });
+  };
+ 
+  
+  console.log("pendingState",pendingState);
+  
+  console.log("currentTransactions",dashboardState);
+  const handleCellClick = (transaction:any) => {
+    // if(status=== "Pending Authorisation"){
+      navigate('/transaction')
+    
+  
+  }
+  const columns = [
+
+    {
+      field: "type",
+      flex: 1,
+      headerName: 'Type',
+      
+
+    }
+    ,
+    {
+      field: 'date',
+      flex: 1,
+      headerName: 'Initiate Date',
+      
+    },
+    {
+      field: 'amount',
+      flex: 1,
+      headerName: 'Amount',
+      
+    },
+    {
+      field: 'status',
+      flex: 1,
+      headerName: 'Status',
+      renderCell: (params: any) => (<div>
+        <Tag size='medium' type={params.value.type} label={params.value.label} />
+      </div>
+      )
+    }
+  ]
+  const statusTags: any = {
+    "Pending Authorisation": { label: "Pending Authorisation", type: "pending" },
+    "Sent to Bank": { label: "Sent to Bank", type: "completed" },
+    "Rejected by Bank": { label: "Rejected by Bank", type: "error" },
+    "Parsing Failed": { label: "Parsing Failed", type: "error" },
+    "Ready for Verification": { label: "Ready for Verification", type: "pending" },
+    "Approved": { label: "Approved", type: "completed" },
+    "Conversion Failed": { label: "Conversion Failed", type: "error" },
+  }
+
+
+
+  const rows = dashboardState.data && 
+    dashboardState.data.map((item: any, index: number) => ({
+      id: index + 1,
+      type: item.type,
+      date: item.date,
+      amount: item.amount,
+      status: statusTags[item.status]
+    }))
+  
+
+  const GridTableProps = {
+    rows: rows,
+    columns: columns,
+    hidePagination: false,
+    checkboxSelection: false,
+    autoPageSize: false,
+    disableColumnMenu: false,
+    autoHeight: true,
+    onCellClick: handleCellClick,
+    disableColumnFilter: false,
+    paginationModel: {
+      pageSize: 10,
+      page:0
+    },
+    hideFooterRowCount: false
+  };
   return (
-    <div className="max-w-2xl mx-auto">
-      <Card>
-        <div className="flex justify-between mb-4">
-          {from.map((sender, index) => (
-            <div key={index}>
-              <h3 className="text-xl font-semibold">From</h3>
-              <p>{sender.accountname}</p>
-              <p>Account Number: {sender.accountnumber}</p>
-              <p>Balance: {sender.balance}</p>
-              <p>Branch: {sender.branch}</p>
-            </div>
-          ))}
-          {to.map((recipient, index) => (
-            <div key={index}>
-              <h3 className="text-xl font-semibold">To</h3>
-              <p>{recipient.accountname}</p>
-              <p>Account Number: {recipient.accountnumber}</p>
-              <p>Balance: {recipient.balance}</p>
-              <p>Branch: {recipient.branch}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
 
-      <Card>
-        <h3 className="text-xl font-semibold mb-4">Deal Reference</h3>
-        <div className="grid grid-cols-2 gap-4">
-          {deal_referance.map((deal, index) => (
-            <div key={index}>
-              <p>Deal Reference Code: {deal["reference code"]}</p>
-              <p>Deal Code: {deal["deal code"]}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
+    <Grid container className='bg-blue-50' spacing={2} sx={{
+      p: 3,
+    }}>
+      {/* <Grid item xs={12}>
+        <Card className='shadow-none p-2 h-auto border rounded-1xl' elevation={3}
+        >
+          <Box className='flex justify-between'>
+            <Text variant='h4' className='mt-4 ml-2 font-normal'> Pendings Activities </Text>
+            <Button onClick={handleRefresh} variant='tertiary'>Refresh</Button>
+          </Box>
 
-      <Card>
-        <h3 className="text-xl font-semibold mb-4">Payment Details</h3>
-        <div className="grid grid-cols-2 gap-4">
-          {payment.map((pay, index) => (
-            <div key={index}>
-              <p>Payment to Beneficiary: {pay["payment benifercy"]}</p>
-              <p>Debit Account: {pay["Debit account"]}</p>
-              <p>Payment Date: {pay["payment-date"]}</p>
-              <p>Value Date: {pay["value-date"]}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
+          <Box className='flex p-3 gap-5 '>
+            <Card className="shadow border mt-2 w-2/5 p-3 rounded-lg">
+              <Box className='flex justify-between'>
+                <Text variant='h5' className="font-normal">All</Text>
+                <IconButton className="text-gray-500"><ChevronRightSmall /></IconButton>
+              </Box>
 
-      <Card>
-        <h3 className="text-xl font-semibold mb-4">Bank Details</h3>
-        <div className="grid grid-cols-2 gap-4">
-          {sender_details.map((senderDetail, index) => (
-            <div key={index}>
-              <h4 className="font-semibold">Sender Details</h4>
-              <p>Bank Name: {senderDetail.bankname}</p>
-              <p>Bank Detail: {senderDetail.bankdetail}</p>
-            </div>
-          ))}
-          {intermidiate_bank_details.map((intermediateDetail, index) => (
-            <div key={index}>
-              <h4 className="font-semibold">Intermediate Bank Details</h4>
-              <p>Bank Name: {intermediateDetail.bankname}</p>
-              <p>Bank Detail: {intermediateDetail.bankdetail}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
+              <Text variant='label3' className="text-gray-500">{dashboardState?.pendingActivities?.pendingAll.count} Individual Transactions</Text>
+              <Div className='flex justify-between'>
+                <Text variant='label3' className="text-gray-500">{dashboardState?.pendingActivities?.pendingAll.files} Files</Text>
+                <Text variant='label3' className="text-md font-semibold text-gray-600">{dashboardState?.pendingActivities?.pendingAll.amount}</Text>
+              </Div>
 
-      <Card>
-        <h3 className="text-xl font-semibold mb-4">Additional Details</h3>
-        {additional_details.map((detail, index) => (
-          <div key={index}>
-            <p>Purpose: {detail.purpose}</p>
-            <p>Payment Detail: {detail.paymentdetail}</p>
-            <p>Customer Reference: {detail.customerreference}</p>
-            <p>Authorizer: {detail.autheriour}</p>
-          </div>
-        ))}
-      </Card>
-    </div>
+            </Card>
+
+
+            <Card className="shadow mt-2 border w-2/5 p-3 rounded-lg">
+              <Box className='flex justify-between'>
+                <Text variant="h5" className="font-normal">Telegraphic</Text>
+                <IconButton className="text-gray-500"><ChevronRightSmall /></IconButton>
+              </Box>
+
+              <Text variant='label3' className="text-gray-500">{dashboardState?.pendingActivities?.telegraphics.count} Individual Transactions</Text>
+              <Div className='flex justify-between'>
+                <Text variant='label3' className="text-gray-500">{dashboardState?.pendingActivities?.telegraphics.files} Files</Text>
+                <Text variant='label3' className="text-md font-semibold text-gray-600">{dashboardState?.pendingActivities?.telegraphics.amount}</Text>
+              </Div>
+            </Card>
+            <Card className="shadow mt-2 border w-2/5 p-3 rounded-lg">
+              <Box className='flex justify-between'>
+                <Text variant="h5" className="font-normal">Within Bank</Text>
+                <IconButton className="text-gray-500"><ChevronRightSmall /></IconButton>
+              </Box>
+
+              <Text variant='label3' className="text-gray-500">{dashboardState?.pendingActivities?.withinBank.count} Individual Transactions</Text>
+              <Div className='flex justify-between'>
+                <Text variant='label3' className="text-gray-500">{dashboardState?.pendingActivities?.withinBank.files} Files</Text>
+                <Text variant='label3' className="text-md font-semibold text-gray-600">{dashboardState?.pendingActivities?.withinBank.amount}</Text>
+              </Div>
+            </Card>
+          </Box>
+        </Card>
+      </Grid> */}
+      <Grid item xs={12}>
+        <Card className='shadow-none mt-5 p-2 h-auto border rounded-1xl' elevation={3} >
+          <Box className='flex justify-between'>
+            <Text variant='h4' className='mt-4  font-normal'> Recent Transactions </Text>
+
+            <Button onClick={handleRefresh} variant='tertiary'>Refresh</Button>
+          </Box>
+          <Text variant="label1" className=' text-gray-400'>Showing 1 - 10 out of 16</Text>
+
+          <GridTable
+            className='mt-4 border-none cursor-pointer'
+            {...GridTableProps}
+
+          />
+        </Card>
+
+      </Grid>
+    </Grid>
   );
 };
 
-export default PaymentDetails;
+export default Dashboard;
 
 
 
 
 
 
-const transactionReducer = (state = initialStateTrans, action: any) => {
-  switch (action.type) {
-    case FETCH_TRANSACTION_REQUEST:
-      return {
-        ...state,
-        loading: true,
-        error: null,
-      };
 
-    case FETCH_TRANSACTION_SUCCESS:
-      console.log('Action Payload:', action.payload);
-      return {
-        ...state,
-        loading: false,
-        ...action.payload, // Spread the response payload directly into the state
-      };
 
-    case FETCH_TRANSACTION_FAILURE:
-      return {
-        ...state,
-        loading: false,
-        error: action.payload,
-      };
 
-    default:
-      return state;
-  }
-};
 
+
+
+
+
+
+Uncaught runtime errors:
+×
+ERROR
+Cannot read properties of undefined (reading 'length')
+TypeError: Cannot read properties of undefined (reading 'length')
+    at IM (webpack://dashboard/./node_modules/@enbdleap/react-ui/lib/index.js?:242:129364)
+    at FA (webpack://dashboard/./node_modules/@enbdleap/react-ui/lib/index.js?:242:314832)
+    at OI (webpack://dashboard/./node_modules/@enbdleap/react-ui/lib/index.js?:242:273567)
+    at PL (webpack://dashboard/./node_modules/@enbdleap/react-ui/lib/index.js?:242:355845)
+    at eval (webpack://dashboard/./node_modules/@enbdleap/react-ui/lib/index.js?:242:399278)
+    at renderWithHooks (webpack://dashboard/./node_modules/react-dom/cjs/react-dom.development.js?:15486:18)
+    at updateForwardRef (webpack://dashboard/./node_modules/react-dom/cjs/react-dom.development.js?:19240:20)
+    at beginWork (webpack://dashboard/./node_modules/react-dom/cjs/react-dom.development.js?:21670:16)
+    at HTMLUnknownElement.callCallback (webpack://dashboard/./node_modules/react-dom/cjs/react-dom.development.js?:4164:14)
+    at Object.invokeGuardedCallbackDev (webpack://dashboard/./node_modules/react-dom/cjs/react-dom.development.js?:4213:16)
+ERROR
+Cannot read properties of undefined (reading 'length')
+TypeError: Cannot read properties of undefined (reading 'length')
+    at IM (webpack://dashboard/./node_modules/@enbdleap/react-ui/lib/index.js?:242:129364)
+    at FA (webpack://dashboard/./node_modules/@enbdleap/react-ui/lib/index.js?:242:314832)
+    at OI (webpack://dashboard/./node_modules/@enbdleap/react-ui/lib/index.js?:242:273567)
+    at PL (webpack://dashboard/./node_modules/@enbdleap/react-ui/lib/index.js?:242:355845)
+    at eval (webpack://dashboard/./node_modules/@enbdleap/react-ui/lib/index.js?:242:399278)
+    at renderWithHooks (webpack://dashboard/./node_modules/react-dom/cjs/react-dom.development.js?:15486:18)
+    at updateForwardRef (webpack://dashboard/./node_modules/react-dom/cjs/react-dom.development.js?:19240:20)
+    at beginWork (webpack://dashboard/./node_modules/react-dom/cjs/react-dom.development.js?:21670:16)
+    at beginWork$1 (webpack://dashboard/./node_modules/react-dom/cjs/react-dom.development.js?:27460:14)
+    at performUnitOfWork (webpack://dashboard/./node_modules/react-dom/cjs/react-dom.development.js?:26594:12)
+
+
+
+{
+  "data": [
+    {
+      "transactionId": "TXN001",
+      "paymentAmount": 1000,
+      "debitedAmount": 1000,
+      "status": "Sent to Bank",
+      "TransactionType": "Telegraphic Transfer",
+      "currency": "USD",
+      "initiateDate": "2024-08-01T00:00:00.000Z"
+    },
+    {
+      "transactionId": "TXN002",
+      "paymentAmount": 5000,
+      "debitedAmount": 5000,
+      "status": "Approved",
+      "TransactionType": "Within Bank Transfer",
+      "currency": "AED",
+      "initiateDate": "2024-08-02T00:00:00.000Z"
+    },
+    {
+      "transactionId": "TXN003",
+      "paymentAmount": 1500,
+      "debitedAmount": 1500,
+      "status": "Pending",
+      "TransactionType": "Telegraphic Transfer",
+      "currency": "USD",
+      "initiateDate": "2024-08-03T00:00:00.000Z"
+    },
+    {
+      "transactionId": "TXN004",
+      "paymentAmount": 2000,
+      "debitedAmount": 2000,
+      "status": "Approved",
+      "TransactionType": "FileUpload",
+      "currency": "GBP",
+      "initiateDate": "2024-08-04T00:00:00.000Z"
+    },
+    {
+      "transactionId": "TXN005",
+      "paymentAmount": 2500,
+      "debitedAmount": 2500,
+      "status": "Approved",
+      "TransactionType": "Within Bank Transfer",
+      "currency": "USD",
+      "initiateDate": "2024-08-05T00:00:00.000Z"
+    },
+    {
+      "transactionId": "TXN006",
+      "paymentAmount": 3000,
+      "debitedAmount": 3000,
+      "status": "Pending",
+      "TransactionType": "TT",
+      "currency": "EUR",
+      "initiateDate": "2024-08-06T00:00:00.000Z"
+    }
+  ]
+}
