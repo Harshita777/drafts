@@ -1,46 +1,36 @@
 export class DashboardApi {
   private baseUrl = "http://localhost:8081";
 
-  public async fetchPendingData(): Promise<DashboardDTO> {
-    return await httpGet<DashboardDTO>(`${this.baseUrl}/dashboard/transaction/pending-activities`, false);
-  }
-  public async fetchDashboardData(): Promise<DashboardDTO> {
-    return await httpGet<DashboardDTO>(`${this.baseUrl}/dashboard/fetch-transaction-details`, false);
-  }
-  public async fetchTransactionData(trid: any): Promise<TransactionDTO> {
-    return await httpGet<TransactionDTO>(`${this.baseUrl}/dashboard/transaction/${trid}`, false);
-  }
-}
-
-
-
-
-export class AddBeneficiaryApi {
-  public async getBeneficiary(
-    iBanNumber: string
-  ): Promise<BeneficiaryDto | undefined> {
-    const data = {
-      iBanNumber
-    };
+  public async fetchPendingData(): Promise<DashboardDTO | undefined> {
     try {
-      const response = await httpGet<BeneficiaryDto>(getBeneficiaryByIBAN + `/${iBanNumber}`, false);
-      console.log('login: ', response);
-
+      const response = await httpGet<DashboardDTO>(`${this.baseUrl}/dashboard/transaction/pending-activities`, false);
+      console.log('fetchPendingData: ', response);
       return response;
     } catch (error) {
+      console.error('Error fetching pending data: ', error);
       throw error;
     }
   }
 
-  public async addBeneficiary(payload: AddBeneficiary): Promise<AddBeneficiaryModelDto | undefined> {
+  public async fetchDashboardData(): Promise<DashboardDTO | undefined> {
     try {
-      const response = await httpPost<AddBeneficiaryModelDto>(addBeneficiaryUrl, true, payload, true);
-      console.log('addBeneficiary: ', response, payload);
-
+      const response = await httpGet<DashboardDTO>(`${this.baseUrl}/dashboard/fetch-transaction-details`, false);
+      console.log('fetchDashboardData: ', response);
       return response;
     } catch (error) {
+      console.error('Error fetching dashboard data: ', error);
       throw error;
     }
   }
 
+  public async fetchTransactionData(trid: any): Promise<TransactionDTO | undefined> {
+    try {
+      const response = await httpGet<TransactionDTO>(`${this.baseUrl}/dashboard/transaction/${trid}`, false);
+      console.log('fetchTransactionData: ', response);
+      return response;
+    } catch (error) {
+      console.error(`Error fetching transaction data for TRID ${trid}: `, error);
+      throw error;
+    }
+  }
 }
