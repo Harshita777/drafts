@@ -330,3 +330,24 @@ const onCloseModal = () => {
     props.setOpen(false);
 };
 
+
+useEffect(() => {
+    if (!props.open) {
+        // Reset state when modal is closed
+        setProductCount(0);
+        setTransactionTypeCount(0);
+        setSelectedProduct([]);
+        setSelectedTransactionType([]);
+        setUserEntitlement(undefined);
+        setUserRole('');
+        setUserName('');
+        setUserID('');
+        setDailyLimit('');
+        setEntitlementProducts([]);
+        setEntitlementTransType([]);
+        setSelectedSubProduct([]);
+        setCurrentTransType([]);
+        setCurrentSubProduct([]);
+    }
+}, [props.open]);
+
