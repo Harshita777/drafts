@@ -306,3 +306,27 @@ const EntitlementModal = (props: any) => {
 }
 
 export default EntitlementModal
+
+
+
+
+
+
+const onCloseModal = () => {
+    setProductCount(0);
+    setTransactionTypeCount(0);
+    setSelectedProduct([]);
+    setSelectedTransactionType([]);
+    setUserEntitlement(undefined);
+    setUserRole('');
+    setUserName('');
+    setUserID('');
+    setDailyLimit('');
+    setEntitlementProducts([]);
+    setEntitlementTransType([]);
+    setSelectedSubProduct([]);
+    setCurrentTransType([]);
+    setCurrentSubProduct([]);
+    props.setOpen(false);
+};
+
