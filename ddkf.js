@@ -19,3 +19,13 @@
   };
 
 const [value, setValue] = useState(0);
+
+
+
+  const handleHover = () => {
+    return (
+      <Alert severity='info' action={<Button color='secondary' size='medium'> Dismiss </Button>}>
+        <Text variant='h6'>Your available current daily limit is 50,000.00 AED</Text>
+      </Alert>
+    );
+  };
