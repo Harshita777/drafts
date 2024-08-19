@@ -1,30 +1,25 @@
 import React, { useState } from 'react';
 import {
-  Box, Button, Card, Text, Grid, Menu, MenuItem, IconButton
+  Box, Button, Card, Grid, Menu, MenuItem
 } from "@enbdleap/react-ui";
-import { useNavigate } from 'react-router-dom';
 import { ChevronDownSmall, ChevronRightSmall } from '@enbdleap/react-icons';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [subAnchorEl, setSubAnchorEl] = useState<null | HTMLElement>(null);
+  const [subMenuOpen, setSubMenuOpen] = useState(false);
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
+    setSubMenuOpen(false);
   };
 
   const handleClose = () => {
     setAnchorEl(null);
-    setSubAnchorEl(null);
+    setSubMenuOpen(false);
   };
 
-  const handleSubMenuClick = (event: React.MouseEvent<HTMLLIElement>) => {
-    setSubAnchorEl(event.currentTarget);
-  };
-
-  const handleSubMenuClose = () => {
-    setSubAnchorEl(null);
+  const handleSingleClick = () => {
+    setSubMenuOpen(!subMenuOpen);
   };
 
   return (
@@ -43,20 +38,24 @@ const Dashboard = () => {
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
               onClose={handleClose}
+              anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'left',
+              }}
+              transformOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+              }}
             >
-              <MenuItem onClick={handleSubMenuClick}>
-                Single <ChevronRightSmall />
+              <MenuItem onClick={handleSingleClick}>
+                Single {subMenuOpen ? <ChevronDownSmall /> : <ChevronRightSmall />}
               </MenuItem>
-              <Menu
-                anchorEl={subAnchorEl}
-                open={Boolean(subAnchorEl)}
-                onClose={handleSubMenuClose}
-                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-              >
-                <MenuItem onClick={handleClose}>Telegraphic Transfer</MenuItem>
-                <MenuItem onClick={handleClose}>Within Bank Transfer</MenuItem>
-              </Menu>
+              {subMenuOpen && (
+                <Box sx={{ pl: 2 }}>
+                  <MenuItem onClick={handleClose}>Telegraphic Transfer</MenuItem>
+                  <MenuItem onClick={handleClose}>Within Bank Transfer</MenuItem>
+                </Box>
+              )}
               <MenuItem onClick={handleClose}>File Upload</MenuItem>
             </Menu>
           </Box>
