@@ -1,44 +1,3 @@
-// TabsComponent.tsx
-
-import React from 'react';
-import { Tabs, Tab, Button, Alert, Box } from '@enbdleap/react-ui';
-import { ChevronDownSmall } from '@enbdleap/react-icons';
-
-interface TabsComponentProps {
-  value: number;
-  handleChange: (event: React.SyntheticEvent, newValue: number) => void;
-  handleHover: () => JSX.Element;
-  handleDropdownClick: () => void;
-}
-
-const TabsComponent: React.FC<TabsComponentProps> = ({ value, handleChange, handleHover, handleDropdownClick }) => {
-  return (
-    <Box sx={{}}>
-      <Tabs value={value} onChange={handleChange} aria-label="basic tabs example" scrollButtons>
-        <Tab label="All" />
-        <Tab label="Single" />
-        <Tab label="File Upload" />
-      </Tabs>
-      <Button
-        size='medium'
-        onMouseEnter={handleHover}
-        onClick={handleDropdownClick}
-        className='px-6 mt-1 mr-5'
-      >
-        Initiate Payment <ChevronDownSmall />
-      </Button>
-    </Box>
-  );
-};
-
-export default TabsComponent;
-
-
-
-
-
-// Dashboard.tsx
-
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Box, Card, Grid, GridTable, Alert, Text } from '@enbdleap/react-ui';
@@ -51,7 +10,8 @@ const Dashboard = () => {
   const dashboardState = useSelector((state: any) => state.dashboardReducer);
   const pendingState = useSelector((state: any) => state.pendingReducer);
   const [value, setValue] = React.useState(0);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [showMainDropdown, setShowMainDropdown] = useState(false);
+  const [showSingleDropdown, setShowSingleDropdown] = useState(false);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -138,8 +98,13 @@ const Dashboard = () => {
     );
   };
 
-  const handleDropdownClick = () => {
-    setShowDropdown((prev) => !prev);
+  const handleMainDropdownClick = () => {
+    setShowMainDropdown((prev) => !prev);
+    setShowSingleDropdown(false); // Close nested dropdown when main dropdown is toggled
+  };
+
+  const handleSingleClick = () => {
+    setShowSingleDropdown((prev) => !prev);
   };
 
   return (
@@ -150,15 +115,30 @@ const Dashboard = () => {
             value={value}
             handleChange={handleChange}
             handleHover={handleHover}
-            handleDropdownClick={handleDropdownClick}
+            handleDropdownClick={handleMainDropdownClick}
           />
         </Card>
-        {showDropdown && (
+        {showMainDropdown && (
           <Box className='absolute mt-2 right-10 z-50 bg-white border rounded-md shadow-md'>
-            <Text className='p-2 cursor-pointer'>Single</Text>
-            <Text className='p-2 cursor-pointer'>Telegraphic Transfer</Text>
-            <Text className='p-2 cursor-pointer'>Within Bank Transfer</Text>
-            <Text className='p-2 cursor-pointer'>File Upload</Text>
+            <Text
+              className='p-2 cursor-pointer hover:bg-blue-100 hover:border hover:border-blue-300 rounded-md'
+              onClick={handleSingleClick}
+            >
+              Single
+            </Text>
+            {showSingleDropdown && (
+              <Box className='absolute mt-1 left-full top-0 z-50 bg-white border rounded-md shadow-md'>
+                <Text className='p-2 cursor-pointer hover:bg-blue-100 hover:border hover:border-blue-300 rounded-md'>
+                  Telegraphic Transfer
+                </Text>
+                <Text className='p-2 cursor-pointer hover:bg-blue-100 hover:border hover:border-blue-300 rounded-md'>
+                  Within Bank Transfer
+                </Text>
+              </Box>
+            )}
+            <Text className='p-2 cursor-pointer hover:bg-blue-100 hover:border hover:border-blue-300 rounded-md'>
+              File Upload
+            </Text>
           </Box>
         )}
       </Grid>
