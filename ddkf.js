@@ -1,90 +1,71 @@
-interface TransactionTypeDTO {
-  _id: object;
-  TransactionType: string;
+public async fetchTransactionSummary(payload: any): Promise<TransactionsResponseDTO | undefined> {
+    const data =  payload;
+    try {
+      const response = await httpPost<TransactionsResponseDTO>(`${transactionSummary}`, data,false,);
+
+      return response;
+    } catch (error) {
+      console.error(`Error fetching transaction data for: `, error);
+      throw error;
+    }
+  }
+
+
+function* fetchTransactionSummary(payload:any): Generator<any, void, any> {
+    try {
+        const response = yield call(() => dashboardApi.fetchTransactionSummary(payload));
+        const data = response;
+
+
+        yield put({ type: FETCH_TRANSACTION_SUMMARY_SUCCESS, payload: data });
+    } catch (error: any) {
+        yield put({ type: FETCH_TRANSACTION_SUMMARY_FAILURE, payload: error.message });
+    }
 }
 
-interface DebitAccountDTO {
-  _id: object;
-  accountNumber: string;
-  accountName: string;
-  accountType: string;
-  currencyCode: string;
-  balance: string;
-}
 
-interface BeneficiaryDTO {
-  _id: object;
-  beneficiaryReferenceId: string;
-  beneficiaryAccountType: string;
-  beneficiaryAccountNumber: string;
-  beneficiaryIBAN: string;
-  beneficiaryName: string;
-  beneficiaryNickName: string;
-  beneficiaryBankName: string;
-  beneficiaryCountry: string;
-  currencyCode: string;
-  beneficiaryAddress: string;
-  phoneNumber: string;
-  email: string;
-  createdAt: string;
-  createdBy: string;
-  updatedAt: string;
-  updatedBy: string;
-}
 
-interface PaymentCurrencyDTO {
-  _id: object;
-  currency: string;
-}
 
-interface DealReferenceDTO {
-  dealReferenceCode: string;
-  dealCode: string;
-}
+const transactionSummaryReducer = (state = initialState, action: any) => {
+  switch (action.type) {
+    case FETCH_TRANSACTION_SUMMARY_REQUEST:
+      return {
+        ...state,
+        loading: true,
+        error: null,
+      };
 
-interface TransactionStatusDTO {
-  _id: object;
-  status: string;
-}
+    case FETCH_TRANSACTION_SUMMARY_SUCCESS:
 
-interface PaymentDetailsDTO {
-  paymentDate: string;
-  valueDate: string;
-  chargeType: string;
-  debitedAmount: number;
-  paymentAmount: number;
-}
+      return {
+        ...state,
+        loading: false,
+        ...action.payload, 
+      };
 
-interface BankDetailsDTO {
-  bankName: string;
-  bankDetails: string;
-}
+    case FETCH_TRANSACTION_SUMMARY_FAILURE:
+      return {
+        ...state,
+        loading: false,
+        error: action.payload,
+      };
 
-interface SenderCorrespondentDetailsDTO {
-  intermediaryBank: BankDetailsDTO;
-  correspondentBank: BankDetailsDTO;
-}
+    default:
+      return state;
+  }
+};
 
-interface AdditionalDetailsDTO {
-  purposeOfTransfer: string;
-  paymentDetails: string;
-  customerReference: string;
-  authoriser: string;
-}
 
-interface TransactionDTO {
-  transactionType: TransactionTypeDTO;
-  debitAccountId: DebitAccountDTO;
-  beneficiaryId: BeneficiaryDTO;
-  paymentCurrency: PaymentCurrencyDTO;
-  dealReference: DealReferenceDTO;
-  transactionStatus: TransactionStatusDTO;
-  paymentDetails: PaymentDetailsDTO;
-  transactionId: string;
-  senderCorrespondentDetails: SenderCorrespondentDetailsDTO;
-  additionalDetails: AdditionalDetailsDTO;
-}
 
-interface TransactionsResponseDTO {
-  data: TransactionDTO[];
-}
+
+useEffect(() => {
+  dispatch({ type: FETCH_TRANSACTION_SUMMARY_REQUEST,payload:{
+    userId:"user001"
+  } });
+
+
+
+
+export const FETCH_TRANSACTION_SUMMARY_REQUEST = 'FETCH_TRANSACTION_SUMMARY_REQUEST';
+export const FETCH_TRANSACTION_SUMMARY_SUCCESS = 'FETCH_TRANSACTION_SUMMARY_SUCCESS';
+export const FETCH_TRANSACTION_SUMMARY_FAILURE = 'FETCH_TRANSACTION_SUMMARY_FAILURE';
