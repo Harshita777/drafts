@@ -1,196 +1,175 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FETCH_DASHBOARD_REQUEST, FETCH_PENDING_REQUEST } from '../../redux/actions/DashboardActions';
+import { Box, Card, Grid, GridTable, Text, Div, Tag } from '@enbdleap/react-ui';
+import { useNavigate } from 'react-router-dom';
+import { FETCH_TRANSACTION_SUMMARY_REQUEST } from '../../../redux/actions/DashboardActions';
+import { statusTags, transactionPendingColumns, transactionSummaryColumns } from '../../../config/config';
 
-import {
-    Box, Text, Card, Tag, Button, IconButton, Div, Flex
-} from "@enbdleap/react-ui";
-import { Grid, GridTable } from '@enbdleap/react-ui';
-import { ChevronRightSmall } from '@enbdleap/react-icons';
-import { recentTransactionsColumns, statusTags } from '../../config/config';
-import { useNavigate } from 'react-router';
+interface PendingActivitiesProps {
+  transferType: string;
+}
 
-const Dashboard: React.FC = () => {
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
-    const dashboardState = useSelector((state: any) => state.dashboardReducer);
-    const pendingState = useSelector((state: any) => state.pendingReducer);
+const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
 
-    const [filteredData, setFilteredData] = useState<any[]>([]);
-    const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  useEffect(() => {
+    dispatch({ type: FETCH_TRANSACTION_SUMMARY_REQUEST, payload: { userId: "user001" } });
+  }, [dispatch]);
 
-    useEffect(() => {
-        dispatch({ type: FETCH_DASHBOARD_REQUEST });
-        dispatch({ type: FETCH_PENDING_REQUEST });
-    }, [dispatch]);
+  const handleCellClick = (params: any) => {
+    if (params.row && params.row.status && params.row.status.label) {
+      const status = params.row.status.label;
+      if (status === 'Pending') {
+        navigate(`/dashboard/transaction?rfid=1234`);
+      }
+    }
+  };
 
-    useEffect(() => {
-        if (dashboardState.data) {
-            filterTableData(selectedCategory);
-        }
-    }, [dashboardState.data, selectedCategory]);
+ 
 
-    const handleRefresh = () => {
-        dispatch({ type: FETCH_DASHBOARD_REQUEST });
-    };
+  const filteredRows = transactionSummaryState.data
+    ? transactionSummaryState.data
+        .filter((item: any) => 
+          transferType === 'all' || item.transactionType.TransactionType.includes(transferType)
+        )
+        .map((item: any, index: number) => ({
+          id: index + 1,
+          date: item.beneficiaryId.createdAt,
+          amount: item.debitAccountId.balance,
+          account: item.beneficiaryId.beneficiaryIBAN,
+          name: item.beneficiaryId.beneficiaryName,
+          customer: item.additionalDetails.customerReference,
+          fileType: item.transactionType.TransactionType,
+          debit: item.debitAccountId.accountNumber,
+          accountName: item.debitAccountId.accountName,
+          local: item.paymentCurrency.currency,
+          payment: item.paymentDetails.paymentAmount,
+          currency: item.paymentCurrency.currency,
+          type: item.debitAccountId.accountType,
+          paymentDate: item.paymentDetails.paymentDate,
+          reference: item.beneficiaryId.beneficiaryReferenceId,
+          status: statusTags[item.transactionStatus.status.pending],
+        }))
+    : [];
 
-    const handleCellClick = (params: any) => {
-        if (params.row && params.row.status && params.row.status.label) {
-            const status = params.row.status?.label;
-            if (status === "Pending") {
-                navigate(`/transaction?trid=${params.row.transactionId}`);
-            }
-        }
-    };
+  const GridTableProps = {
+    rows: filteredRows,
+    columns: [
+      ...transactionPendingColumns
+    ],
+    hidePagination: false,
+    checkboxSelection: false,
+    autoPageSize: false,
+    disableColumnMenu: true,
+    autoHeight: true,
+    onRowClick: handleCellClick,
+    disableColumnFilter: true,
+    paginationModel: {
+      pageSize: 10,
+      page: 0,
+    },
+    hideFooterRowCount: false,
+  };
 
-    const categoryToTypeMap: Record<string, string> = {
-        'pending-all': 'all',
-        'telegraphics': 'Telegraphic Transfer',
-        'withinbank': 'Within Bank Transfer',
-    };
+  return (
+    <>
+      <Grid container className='w-full h-auto shadow-bottom' margin={0}>
+        <Card className='bg-blue-50 w-full flex justify-between'></Card>
+      </Grid>
+      
+      <Grid container spacing={2} className='p-9'>
+      <Grid item xs={12}>
+          <Card className='flex shadow-none  p-2 h-auto border rounded-1xl' >
+            <Box className='flex  flex-1 p-3 gap-5 '>
 
-    const filterTableData = (category: string) => {
-        const mappedType = categoryToTypeMap[category];
-        const filtered = dashboardState.data?.filter((item: any) => {
-            if (mappedType === 'all') return true;
-            return item.TransactionType === mappedType;
-        });
-        setFilteredData(filtered);
-    };
 
-    const handleCardClick = (category: string) => {
-        setSelectedCategory(category);
-    };
+              <Card className='shadow w-full border mt-2 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-normal'>
+                    16
+                  </Text>
 
-    const columns = [
-        ...recentTransactionsColumns,
-        {
-            field: 'status',
-            flex: 1,
-            headerName: 'Status',
-            renderCell: (params: any) => (
-                <Tag size='medium' type={params.value?.type ? params.value.type : ""} label={params.value?.label} />
-            ),
-        },
-    ];
+                </Box>
+                <Text variant='label3' className='text-gray-500'>
+                  Total
+                </Text>
+                <Div className='flex justify-between'>
 
-    const rows = filteredData?.map((item: any, index: number) => ({
-        id: index + 1,
-        type: item.TransactionType,
-        date: item.initiateDate,
-        amount: item.paymentAmount,
-        status: statusTags[item.status],
-        transactionId: item.transactionId,
-    })) || [];
+                  <Text variant='label3' className='text-md font-semibold text-gray-600'>
+                    10,500,000 AED
+                  </Text>
+                </Div>
+              </Card>
 
-    const GridTableProps = {
-        rows: rows,
-        columns: columns,
-        hidePagination: false,
-        checkboxSelection: false,
-        autoPageSize: false,
-        disableColumnMenu: false,
-        autoHeight: true,
-        onRowClick: handleCellClick,
-        disableColumnFilter: false,
-        paginationModel: {
-            pageSize: 10,
-            page: 0,
-        },
-        hideFooterRowCount: false,
-    };
+            </Box>
+            <Box className='flex  flex-1 p-3 gap-5'>
 
-    const hasDashboardData = dashboardState.data && dashboardState.data.length > 0;
-    const hasPendingData = pendingState.data && pendingState.data.length > 0;
 
-    return (
-        <Grid container spacing={2}>
-            {hasPendingData && (
-                <Grid item xs={12}>
-                    <Card className='h-auto' elevation={0}>
-                        <Flex direction="row" justifyContent="space-between">
-                            <Text variant='h4' className='mt-4 ml-2 font-normal'>Pending Activities</Text>
-                            <Button type="button" onClick={handleRefresh} variant='tertiary'>Refresh</Button>
-                        </Flex>
+              <Card className='shadow w-full border mt-2 w-2/5 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-normal'>
+                    16
+                  </Text>
 
-                        <Box className='flex p-3 gap-5'>
-                            {pendingState?.data?.map((item: any, index: any) => {
-                                const category = Object.keys(item)[0];
-                                const details = item[category][0];
-                                const categoryTitles: any = {
-                                    'pending-all': 'All',
-                                    'telegraphics': 'Telegraphic',
-                                    'withinbank': 'Within Bank',
-                                };
-                                return (
-                                    <Card 
-                                        key={index} 
-                                        className={`shadow border mt-2 w-2/5 p-3 rounded-lg ${selectedCategory === category ? 'bg-blue-100' : ''}`}
-                                        onClick={() => handleCardClick(category)}
-                                    >
-                                        <Box className='flex justify-between'>
-                                            <Text variant='h5' className="font-normal">{categoryTitles[category]}</Text>
-                                            <IconButton className="text-gray-500 -m-3"><ChevronRightSmall /></IconButton>
-                                        </Box>
+                </Box>
+                <Text variant='label3' className='text-gray-500'>
+                  Total
+                </Text>
+                <Div className='flex justify-between'>
 
-                                        <Text variant='label3' className="text-gray-500">
-                                            {details.count} Individual Transactions
-                                        </Text>
-                                        <Div className='flex justify-between'>
-                                            <Text variant='label3' className="text-gray-500">
-                                                {details.files} Files
-                                            </Text>
-                                            <Text variant='label3' className="text-md font-semibold text-gray-600">
-                                                {details.amount}
-                                            </Text>
-                                        </Div>
-                                    </Card>
-                                );
-                            })}
-                        </Box>
-                    </Card>
-                </Grid>
-            )}
+                  <Text variant='label3' className='text-md font-semibold text-gray-600'>
+                    10,500,000 AED
+                  </Text>
+                </Div>
+              </Card>
 
-            {hasDashboardData && (
-                <Grid item xs={12}>
-                    <Card className='shadow-none mt-5 p-2 h-auto border rounded-1xl' elevation={3}>
-                        <Box className='flex justify-between'>
-                            <Text variant='h4' className='mt-4 font-normal'>Recent Transactions</Text>
-                            <Button onClick={handleRefresh} variant='tertiary'>Refresh</Button>
-                        </Box>
-                        <Text variant="label1" className='text-gray-400'>Showing 1 - 10 out of 16</Text>
+            </Box>
+            <Box className='flex flex-1 p-3 gap-5'>
 
-                        {rows.length > 0 && (
-                            <GridTable
-                                className='mt-4 border-none cursor-pointer'
-                                {...GridTableProps}
-                            />
-                        )}
-                    </Card>
-                </Grid>
-            )}
 
-            {(!hasPendingData && !hasDashboardData) && (
-                <Flex justifyContent='center' alignItems="center" className="endb-dashboard">
-                    <Flex
-                        minHeight='60vh'
-                        justifyContent='center'
-                        alignItems="center"
-                        width={"98%"}
-                        height={"98%"}
-                        m={2}
-                        sx={{
-                            backgroundColor: "#fff",
-                            borderRadius: "16px"
-                        }}
-                    >
-                        <Text className="text-base font-normal text-slate-300">Contact your administrator to get your widgets defined.</Text>
-                    </Flex>
-                </Flex>
-            )}
+              <Card className='shadow w-full border mt-2 w-2/5 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-normal'>
+                    16
+                  </Text>
+
+                </Box>
+                <Text variant='label3' className='text-gray-500'>
+                  Total
+                </Text>
+                <Div className='flex justify-between'>
+
+                  <Text variant='label3' className='text-md font-semibold text-gray-600'>
+                    10,500,000 AED
+                  </Text>
+                </Div>
+              </Card>
+
+            </Box>
+          </Card>
+
         </Grid>
-    );
+        <Grid item xs={12}>
+          <Card className='shadow-none mt-5 p-2 h-auto border rounded-1xl' elevation={3}>
+            <Box className='flex justify-between'>
+              <Text variant='h4' className='mt-4 font-normal'>
+                Transactions Summary
+              </Text>
+            </Box>
+            <Text variant='label1' className='text-gray-400'>
+              Showing 1 - 10 out of {filteredRows.length}
+            </Text>
+
+            {filteredRows.length > 0 && (
+              <GridTable className='mt-4 text-gray-600' {...GridTableProps} />
+            )}
+          </Card>
+        </Grid>
+      </Grid>
+    </>
+  );
 };
 
-export default Dashboard;
+export default PendingActivities;
