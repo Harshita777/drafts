@@ -43,10 +43,17 @@ const Dashboard: React.FC = () => {
         }
     };
 
+    const categoryToTypeMap: Record<string, string> = {
+        'pending-all': 'all',
+        'telegraphics': 'Telegraphic Transfer',
+        'withinbank': 'Within Bank Transfer',
+    };
+
     const filterTableData = (category: string) => {
+        const mappedType = categoryToTypeMap[category];
         const filtered = dashboardState.data?.filter((item: any) => {
-            if (category === 'all') return true;
-            return item.TransactionType.toLowerCase() === category;
+            if (mappedType === 'all') return true;
+            return item.TransactionType === mappedType;
         });
         setFilteredData(filtered);
     };
