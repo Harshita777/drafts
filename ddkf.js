@@ -1,120 +1,41 @@
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Box, Card, Grid, GridTable, Text, Div, Tag, Tabs, Tab } from '@enbdleap/react-ui';
-import { useNavigate } from 'react-router-dom';
-import { FETCH_TRANSACTION_SUMMARY_REQUEST } from '../../../redux/actions/DashboardActions';
-import { statusTags, transactionPendingColumns } from '../../../config/config';
+import React from 'react';
 
-interface PendingActivitiesProps {
-  transferType: string;
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Error caught by ErrorBoundary", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center min-h-screen bg-gray-100">
+          <div className="max-w-md p-6 bg-white rounded-lg shadow-lg text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Oops! Something went wrong.</h1>
+            <p className="text-gray-700 mb-4">
+              We're sorry, but an unexpected error has occurred. Please try refreshing the page or contact support if the problem persists.
+            </p>
+            <button
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+              onClick={() => window.location.reload()}
+            >
+              Refresh Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
-const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
-
-  const [selectedTransferType, setSelectedTransferType] = useState<string>(transferType);
-
-  useEffect(() => {
-    dispatch({ type: FETCH_TRANSACTION_SUMMARY_REQUEST, payload: { userId: "user001" } });
-  }, [dispatch]);
-
-  const handleCellClick = (params: any) => {
-    if (params.row && params.row.status && params.row.status.label) {
-      const status = params.row.status.label;
-      if (status === 'Pending') {
-        navigate(`/dashboard/transaction?rfid=1234`);
-      }
-    }
-  };
-
-  const handleTabChange = (event: React.ChangeEvent<{}>, newValue: string) => {
-    setSelectedTransferType(newValue);
-  };
-
-  const filteredRows = transactionSummaryState.data
-    ? transactionSummaryState.data
-        .filter((item: any) => 
-          item.transactionStatus.status === 'pending' && 
-          (selectedTransferType === 'all' || item.transactionType.TransactionType.includes(selectedTransferType))
-        )
-        .map((item: any, index: number) => ({
-          id: index + 1,
-          date: item.beneficiaryId.createdAt,
-          amount: item.debitAccountId.balance,
-          account: item.beneficiaryId.beneficiaryIBAN,
-          name: item.beneficiaryId.beneficiaryName,
-          customer: item.additionalDetails.customerReference,
-          fileType: item.transactionType.TransactionType,
-          debit: item.debitAccountId.accountNumber,
-          accountName: item.debitAccountId.accountName,
-          local: item.paymentCurrency.currency,
-          payment: item.paymentDetails.paymentAmount,
-          currency: item.paymentCurrency.currency,
-          type: item.debitAccountId.accountType,
-          paymentDate: item.paymentDetails.paymentDate,
-          reference: item.beneficiaryId.beneficiaryReferenceId,
-          status: statusTags[item.transactionStatus.status.pending],
-        }))
-    : [];
-
-  const GridTableProps = {
-    rows: filteredRows,
-    columns: [
-      ...transactionPendingColumns
-    ],
-    hidePagination: false,
-    checkboxSelection: false,
-    autoPageSize: false,
-    disableColumnMenu: true,
-    autoHeight: true,
-    onRowClick: handleCellClick,
-    disableColumnFilter: true,
-    paginationModel: {
-      pageSize: 10,
-      page: 0,
-    },
-    hideFooterRowCount: false,
-  };
-
-  return (
-    <>
-      <Grid container className='w-full h-auto shadow-bottom' margin={0}>
-        <Card className='bg-blue-50 w-full flex justify-between'></Card>
-      </Grid>
-
-      <Tabs value={selectedTransferType} onChange={handleTabChange} className="my-4">
-        <Tab label="Telegraphic Transfer" value="Telegraphic Transfer" />
-        <Tab label="Within Bank Transfer" value="Within Bank Transfer" />
-      </Tabs>
-      
-      <Grid container spacing={2} className='p-9'>
-        <Grid item xs={12}>
-          <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
-            {/* Add any content you want here */}
-          </Card>
-        </Grid>
-
-        <Grid item xs={12}>
-          <Card className='shadow-none mt-5 p-2 h-auto border rounded-1xl' elevation={3}>
-            <Box className='flex justify-between'>
-              <Text variant='h4' className='mt-4 font-normal'>
-                Transactions Summary
-              </Text>
-            </Box>
-            <Text variant='label1' className='text-gray-400'>
-              Showing 1 - 10 out of {filteredRows.length}
-            </Text>
-
-            {filteredRows.length > 0 && (
-              <GridTable className='mt-4 text-gray-600' {...GridTableProps} />
-            )}
-          </Card>
-        </Grid>
-      </Grid>
-    </>
-  );
-};
-
-export default PendingActivities;
+export default ErrorBoundary;
