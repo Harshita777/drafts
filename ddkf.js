@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FETCH_DASHBOARD_REQUEST, FETCH_PENDING_REQUEST } from '../../redux/actions/DashboardActions';
+
 import {
     Box, Text, Card, Tag, Button, IconButton, Div, Flex
 } from "@enbdleap/react-ui";
@@ -15,12 +16,19 @@ const Dashboard: React.FC = () => {
     const dashboardState = useSelector((state: any) => state.dashboardReducer);
     const pendingState = useSelector((state: any) => state.pendingReducer);
 
-    const [filter, setFilter] = useState<string>('all'); // State to manage the filter
+    const [filteredData, setFilteredData] = useState<any[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
     useEffect(() => {
         dispatch({ type: FETCH_DASHBOARD_REQUEST });
         dispatch({ type: FETCH_PENDING_REQUEST });
     }, [dispatch]);
+
+    useEffect(() => {
+        if (dashboardState.data) {
+            filterTableData(selectedCategory);
+        }
+    }, [dashboardState.data, selectedCategory]);
 
     const handleRefresh = () => {
         dispatch({ type: FETCH_DASHBOARD_REQUEST });
@@ -35,8 +43,16 @@ const Dashboard: React.FC = () => {
         }
     };
 
+    const filterTableData = (category: string) => {
+        const filtered = dashboardState.data?.filter((item: any) => {
+            if (category === 'all') return true;
+            return item.TransactionType.toLowerCase() === category;
+        });
+        setFilteredData(filtered);
+    };
+
     const handleCardClick = (category: string) => {
-        setFilter(category); // Update the filter based on card click
+        setSelectedCategory(category);
     };
 
     const columns = [
@@ -45,32 +61,23 @@ const Dashboard: React.FC = () => {
             field: 'status',
             flex: 1,
             headerName: 'Status',
-            renderCell: (params: any) => {
-                return (
-                    <Tag size='medium' type={params.value?.type ? params.value.type : ""} label={params.value?.label} />
-                )
-            }
-        }
+            renderCell: (params: any) => (
+                <Tag size='medium' type={params.value?.type ? params.value.type : ""} label={params.value?.label} />
+            ),
+        },
     ];
 
-    // Filter the rows based on the selected filter
-    const filteredRows = dashboardState.data ?
-        dashboardState.data
-            .filter((item: any) => {
-                if (filter === 'all') return true;
-                return item.TransactionType.toLowerCase() === filter;
-            })
-            .map((item: any, index: number) => ({
-                id: index + 1,
-                type: item.TransactionType,
-                date: item.initiateDate,
-                amount: item.paymentAmount,
-                status: statusTags[item.status],
-                transactionId: item.transactionId
-            })) : [];
+    const rows = filteredData?.map((item: any, index: number) => ({
+        id: index + 1,
+        type: item.TransactionType,
+        date: item.initiateDate,
+        amount: item.paymentAmount,
+        status: statusTags[item.status],
+        transactionId: item.transactionId,
+    })) || [];
 
     const GridTableProps = {
-        rows: filteredRows,
+        rows: rows,
         columns: columns,
         hidePagination: false,
         checkboxSelection: false,
@@ -81,9 +88,9 @@ const Dashboard: React.FC = () => {
         disableColumnFilter: false,
         paginationModel: {
             pageSize: 10,
-            page: 0
+            page: 0,
         },
-        hideFooterRowCount: false
+        hideFooterRowCount: false,
     };
 
     const hasDashboardData = dashboardState.data && dashboardState.data.length > 0;
@@ -91,7 +98,7 @@ const Dashboard: React.FC = () => {
 
     return (
         <Grid container spacing={2}>
-            {(!hasPendingData && hasDashboardData) && (
+            {hasPendingData && (
                 <Grid item xs={12}>
                     <Card className='h-auto' elevation={0}>
                         <Flex direction="row" justifyContent="space-between">
@@ -100,19 +107,19 @@ const Dashboard: React.FC = () => {
                         </Flex>
 
                         <Box className='flex p-3 gap-5'>
-                            {dashboardState?.data?.map((item: any, index: any) => {
+                            {pendingState?.data?.map((item: any, index: any) => {
                                 const category = Object.keys(item)[0];
                                 const details = item[category][0];
                                 const categoryTitles: any = {
                                     'pending-all': 'All',
                                     'telegraphics': 'Telegraphic',
-                                    'withinbank': 'Within Bank'
+                                    'withinbank': 'Within Bank',
                                 };
                                 return (
-                                    <Card
-                                        key={index}
-                                        className={`shadow border mt-2 w-2/5 p-3 rounded-lg ${filter === category ? 'bg-gray-200' : ''}`}
-                                        onClick={() => handleCardClick(category)} // Handle card click
+                                    <Card 
+                                        key={index} 
+                                        className={`shadow border mt-2 w-2/5 p-3 rounded-lg ${selectedCategory === category ? 'bg-blue-100' : ''}`}
+                                        onClick={() => handleCardClick(category)}
                                     >
                                         <Box className='flex justify-between'>
                                             <Text variant='h5' className="font-normal">{categoryTitles[category]}</Text>
@@ -120,14 +127,14 @@ const Dashboard: React.FC = () => {
                                         </Box>
 
                                         <Text variant='label3' className="text-gray-500">
-                                            {details?.count} Individual Transactions
+                                            {details.count} Individual Transactions
                                         </Text>
                                         <Div className='flex justify-between'>
                                             <Text variant='label3' className="text-gray-500">
-                                                {details?.files} Files
+                                                {details.files} Files
                                             </Text>
                                             <Text variant='label3' className="text-md font-semibold text-gray-600">
-                                                {details?.amount}
+                                                {details.amount}
                                             </Text>
                                         </Div>
                                     </Card>
@@ -145,9 +152,9 @@ const Dashboard: React.FC = () => {
                             <Text variant='h4' className='mt-4 font-normal'>Recent Transactions</Text>
                             <Button onClick={handleRefresh} variant='tertiary'>Refresh</Button>
                         </Box>
-                        <Text variant="label1" className=' text-gray-400'>Showing 1 - 10 out of {filteredRows.length}</Text>
+                        <Text variant="label1" className='text-gray-400'>Showing 1 - 10 out of 16</Text>
 
-                        {filteredRows.length > 0 && (
+                        {rows.length > 0 && (
                             <GridTable
                                 className='mt-4 border-none cursor-pointer'
                                 {...GridTableProps}
