@@ -16,7 +16,8 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
   const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
   const userId = infoStore.getSubscriberId();
 
-  const [currentPage, setCurrentPage] = useState(0);
+  // Pagination state
+  const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
@@ -24,7 +25,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
       type: FETCH_TRANSACTION_SUMMARY_REQUEST,
       payload: { userId: userId }
     });
-  }, [dispatch, userId]);
+  }, [dispatch]);
 
   const handleCellClick = (params: any) => {
     if (params.row && params.row.status && params.row.status.label) {
@@ -41,47 +42,56 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
     }
   };
 
-  const filteredRows = transactionSummaryState.data
+  const rows = transactionSummaryState.data
     ? transactionSummaryState.data
-      .filter((item: any) => {
-        if (transferType === "all") return true;
-        if (transferType === "single") {
-          return item.transactionType.name === "Telegraphic Transfer" ||
-            item.transactionType.name === "Within Bank Transfer";
-        }
-        if (transferType === "file-upload") {
-          return item.transactionType.name === "File Upload";
-        }
-        return false;
-      })
-      .map((item: any, index: number) => ({
-        id: index + 1,
-        date: item.paymentDetails.paymentDate,
-        amount: item.debitAccount?.balance,
-        account: item.beneficiary?.beneficiaryIBAN,
-        name: item.beneficiary?.beneficiaryName,
-        customer: item.additionalDetails.customerReference,
-        fileType: item.transactionType.name,
-        debit: item.debitAccount?.accountNumber,
-        accountName: item.debitAccount?.accountName,
-        local: item.debitAccount?.currencyCode,
-        payment: item.paymentDetails.paymentAmount,
-        currency: item.paymentDetails.paymentCurrency,
-        type: item.debitAccount?.accountType,
-        paymentDate: item.paymentDetails.paymentDate,
-        reference: item.beneficiary?.beneficiaryReferenceId,
-        status: statusTags[item.transactionStatus.status],
-        transactionId: item.transactionId,
-        referenceId: item.referenceId,
-        total: "..",
-        rejection: ".."
-      }))
+        .filter((item: any) => {
+          if (transferType === "all") return true;
+          if (transferType === "single") {
+            return item.transactionType.name === "Telegraphic Transfer" ||
+              item.transactionType.name === "Within Bank Transfer";
+          }
+          if (transferType === "file-upload") {
+            return item.transactionType.name === "File Upload";
+          }
+          return false;
+        })
+        .map((item: any, index: number) => {
+          return {
+            id: index + 1,
+            date: item.paymentDetails.paymentDate,
+            amount: item.debitAccount?.balance,
+            account: item.beneficiary?.beneficiaryIBAN,
+            name: item.beneficiary?.beneficiaryName,
+            customer: item.additionalDetails.customerReference,
+            fileType: item.transactionType.name,
+            debit: item.debitAccount?.accountNumber,
+            accountName: item.debitAccount?.accountName,
+            local: item.debitAccount?.currencyCode,
+            payment: item.paymentDetails.paymentAmount,
+            currency: item.paymentDetails.paymentCurrency,
+            type: item.debitAccount?.accountType,
+            paymentDate: item.paymentDetails.paymentDate,
+            reference: item.beneficiary?.beneficiaryReferenceId,
+            status: statusTags[item.transactionStatus.status],
+            transactionId: item.transactionId,
+            referenceId: item.referenceId,
+            total: "..",
+            rejection: ".."
+          }
+        })
     : [];
 
-  const paginatedRows = filteredRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPage(0); // Reset to the first page when the page size changes
+  };
 
   const GridTableProps = {
-    rows: paginatedRows,
+    rows: rows.slice(page * pageSize, (page + 1) * pageSize),
     columns: [
       {
         field: 'date',
@@ -113,22 +123,21 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
         headerName: 'Rejection Reason',
       }
     ],
-    hidePagination: false,
-    checkboxSelection: false,
-    autoPageSize: false,
-    disableColumnMenu: true,
-    autoHeight: true,
-    onRowClick: handleCellClick,
-    paginationModel: {
-      pageSize: pageSize,
-      page: currentPage,
-    },
+    page: page,
+    pageSize: pageSize,
+    rowCount: rows.length,
+    pagination: true,
+    paginationMode: 'client',
+    onPageChange: handlePageChange,
+    onPageSizeChange: handlePageSizeChange,
     hideFooterRowCount: false,
-    onPageChange: (newPage: number) => setCurrentPage(newPage),
-    onPageSizeChange: (newPageSize: number) => {
-      setPageSize(newPageSize);
-      setCurrentPage(0);
-    },
+    hideFooterSelectedRowCount: true,
+    autoPageSize: false,
+    checkboxSelection: false,
+    autoHeight: true,
+    disableColumnMenu: true,
+    disableColumnFilter: true,
+    onRowClick: handleCellClick,
   };
 
   return (
@@ -139,8 +148,8 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
       <Grid container spacing={2} className='p-9'>
         <Grid item xs={12}>
           <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
-            <Box className=' flex flex-1 p-3 gap-5'>
-              <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
+            <Box className='flex flex-1 p-3 gap-5'>
+              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-normal'>
                     16
@@ -157,7 +166,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
               </Card>
             </Box>
             <Box className='flex flex-1 p-3 gap-5'>
-              <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
+              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-normal'>
                     16
@@ -174,7 +183,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
               </Card>
             </Box>
             <Box className='flex flex-1 p-3 gap-5'>
-              <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
+              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-normal'>
                     16
@@ -200,7 +209,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
               </Text>
             </Box>
             <Text variant='label1' className='text-gray-400'>
-              Showing {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, filteredRows.length)} out of {filteredRows.length}
+              Showing {page * pageSize + 1} - {Math.min((page + 1) * pageSize, rows.length)} out of {rows.length}
             </Text>
             <GridTable className='mt-4 text-gray-600' {...GridTableProps} />
           </Card>
