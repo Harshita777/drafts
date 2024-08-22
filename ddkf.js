@@ -16,8 +16,23 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
   const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
   const userId = infoStore.getSubscriberId()
   useEffect(() => {
-    dispatch({ type: FETCH_TRANSACTION_SUMMARY_REQUEST, payload: { userId: userId } });
-  }, [dispatch]);
+    console.log("11111111");
+    
+    if(userId){
+      dispatch({ type: FETCH_TRANSACTION_SUMMARY_REQUEST, payload: { userId: userId } });
+    }
+    
+  }, [dispatch,userId]);
+  useEffect(()=>{
+    console.log("2222222");
+    return ()=>{
+      console.log("333333");
+    }
+      
+      
+    
+    
+  },[])
 
   const handleCellClick = (params: any) => {
 
