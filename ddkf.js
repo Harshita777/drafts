@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Box, Card, Grid, GridTable, Text, Tag, Div } from '@enbdleap/react-ui';
 import { useNavigate } from 'react-router-dom';
@@ -14,23 +14,24 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
-  const userId = infoStore.getSubscriberId()
+  const userId = infoStore.getSubscriberId();
+
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+
   useEffect(() => {
     dispatch({
       type: FETCH_TRANSACTION_SUMMARY_REQUEST,
       payload: { userId: userId }
     });
-  }, [dispatch]);
+  }, [dispatch, userId]);
 
   const handleCellClick = (params: any) => {
-
     if (params.row && params.row.status && params.row.status.label) {
-
       const status = params.row.status?.label;
       const type = params.row.fileType;
       const trid = params.row.transactionId;
-      const rfid = params.row.reference
-
+      const rfid = params.row.reference;
 
       if (status === 'Pending Authorization' && type === "File Upload") {
         navigate(`/dashboard/payments/file-verify`, { state: trid, replace: true });
@@ -40,10 +41,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
     }
   };
 
-
-
-
-  const rows = transactionSummaryState.data
+  const filteredRows = transactionSummaryState.data
     ? transactionSummaryState.data
       .filter((item: any) => {
         if (transferType === "all") return true;
@@ -56,35 +54,34 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
         }
         return false;
       })
-      .map((item: any, index: number) => {
-        console.log('item', item)
-        return {
-          id: index + 1,
-          date: item.paymentDetails.paymentDate,
-          amount: item.debitAccount?.balance,
-          account: item.beneficiary?.beneficiaryIBAN,
-          name: item.beneficiary?.beneficiaryName,
-          customer: item.additionalDetails.customerReference,
-          fileType: item.transactionType.name,
-          debit: item.debitAccount?.accountNumber,
-          accountName: item.debitAccount?.accountName,
-          local: item.debitAccount?.currencyCode,
-          payment: item.paymentDetails.paymentAmount,
-          currency: item.paymentDetails.paymentCurrency,
-          type: item.debitAccount?.accountType,
-          paymentDate: item.paymentDetails.paymentDate,
-          reference: item.beneficiary?.beneficiaryReferenceId,
-          status: statusTags[item.transactionStatus.status],
-          transactionId: item.transactionId,
-          referenceId: item.referenceId,
-          total:"..",
-          rejection:".."
-        }
-      })
+      .map((item: any, index: number) => ({
+        id: index + 1,
+        date: item.paymentDetails.paymentDate,
+        amount: item.debitAccount?.balance,
+        account: item.beneficiary?.beneficiaryIBAN,
+        name: item.beneficiary?.beneficiaryName,
+        customer: item.additionalDetails.customerReference,
+        fileType: item.transactionType.name,
+        debit: item.debitAccount?.accountNumber,
+        accountName: item.debitAccount?.accountName,
+        local: item.debitAccount?.currencyCode,
+        payment: item.paymentDetails.paymentAmount,
+        currency: item.paymentDetails.paymentCurrency,
+        type: item.debitAccount?.accountType,
+        paymentDate: item.paymentDetails.paymentDate,
+        reference: item.beneficiary?.beneficiaryReferenceId,
+        status: statusTags[item.transactionStatus.status],
+        transactionId: item.transactionId,
+        referenceId: item.referenceId,
+        total: "..",
+        rejection: ".."
+      }))
     : [];
 
+  const paginatedRows = filteredRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+
   const GridTableProps = {
-    rows: rows,
+    rows: paginatedRows,
     columns: [
       {
         field: 'date',
@@ -94,8 +91,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
           if (params.value) {
             const dateObj = new Date(params.value);
             return dateObj.toLocaleDateString('en-US');
-          }
-          else {
+          } else {
             return '';
           }
         },
@@ -123,12 +119,16 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
     disableColumnMenu: true,
     autoHeight: true,
     onRowClick: handleCellClick,
-    disableColumnFilter: true,
     paginationModel: {
-      pageSize: 10,
-      page: 0,
+      pageSize: pageSize,
+      page: currentPage,
     },
     hideFooterRowCount: false,
+    onPageChange: (newPage: number) => setCurrentPage(newPage),
+    onPageSizeChange: (newPageSize: number) => {
+      setPageSize(newPageSize);
+      setCurrentPage(0);
+    },
   };
 
   return (
@@ -140,7 +140,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
         <Grid item xs={12}>
           <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
             <Box className=' flex flex-1 p-3 gap-5'>
-              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
+              <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-normal'>
                     16
@@ -157,7 +157,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
               </Card>
             </Box>
             <Box className='flex flex-1 p-3 gap-5'>
-              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
+              <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-normal'>
                     16
@@ -174,7 +174,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
               </Card>
             </Box>
             <Box className='flex flex-1 p-3 gap-5'>
-              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
+              <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-normal'>
                     16
@@ -200,7 +200,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
               </Text>
             </Box>
             <Text variant='label1' className='text-gray-400'>
-              Showing 1 - 10 out of 98
+              Showing {currentPage * pageSize + 1} - {Math.min((currentPage + 1) * pageSize, filteredRows.length)} out of {filteredRows.length}
             </Text>
             <GridTable className='mt-4 text-gray-600' {...GridTableProps} />
           </Card>
