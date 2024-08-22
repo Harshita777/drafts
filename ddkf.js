@@ -189,3 +189,33 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
 };
 
 export default PendingActivities;
+
+
+
+
+const filteredRows = transactionSummaryState.data
+    ? transactionSummaryState.data
+      .filter((item: any) =>
+        transferType === 'All' ? ((item.transactionType.name.includes("Telegraphic Transfer") || item.transactionType.name.includes("Within Bank Transfer")) && (item.transactionStatus.status === 'Pending Authorization')||(item.transactionStatus.status === 'Ready to Verify')) : item.transactionType.name.includes(transferType)
+      )
+      .map((item: any, index: number) => ({
+        id: index + 1,
+        date: item.paymentDetails?.paymentDate,
+        amount: item.debitAccount?.balance,
+        account: item.beneficiary?.beneficiaryIBAN,
+        name: item.beneficiary?.beneficiaryName,
+        customer: item.additionalDetails?.customerReference,
+        fileType: item.transactionType?.name,
+        debit: item.debitAccount?.accountNumber,
+        accountName: item.debitAccount?.accountName,
+        local: item.paymentDetails?.currency,
+        payment: item.paymentDetails?.paymentCurrency,
+        currency: item.paymentCurrency?.currency,
+        type: item.debitAccount?.accountType,
+        paymentDate: item.paymentDetails?.paymentDate,
+        reference: item.beneficiary?.beneficiaryReferenceId,
+        status: statusTags[item.transactionStatus.status],
+        transactionId: item.transactionId,
+          referenceId: item.referenceId,
+      }))
+    : [];
