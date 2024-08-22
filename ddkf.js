@@ -5,7 +5,7 @@ import { FETCH_DASHBOARD_REQUEST, FETCH_PENDING_REQUEST } from '../../redux/acti
 import {
     Box, Text, Card, Tag, Button, IconButton, Div, Flex, DataGrid
 } from "@enbdleap/react-ui";
-import { Grid, GridTable } from '@enbdleap/react-ui';
+import { Grid } from '@enbdleap/react-ui';
 import { ChevronRightSmall } from '@enbdleap/react-icons';
 import { recentTransactionsColumns, statusTags } from '../../config/config';
 import { useNavigate } from 'react-router-dom';
@@ -18,6 +18,11 @@ const Dashboard: React.FC = () => {
 
     const [filteredData, setFilteredData] = useState<any[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>('pending-all');
+    const [pendingCounts, setPendingCounts] = useState({
+        all: 0,
+        telegraphic: 0,
+        withinBank: 0,
+    });
 
     useEffect(() => {
         dispatch({ type: FETCH_DASHBOARD_REQUEST });
@@ -26,6 +31,20 @@ const Dashboard: React.FC = () => {
 
     useEffect(() => {
         if (dashboardState.data) {
+            const allCount = dashboardState.data.length;
+            const telegraphicCount = dashboardState.data.filter(
+                (item: any) => item.transactionType.name === 'Telegraphic Transfer'
+            ).length;
+            const withinBankCount = dashboardState.data.filter(
+                (item: any) => item.transactionType.name === 'Within Bank Transfer'
+            ).length;
+
+            setPendingCounts({
+                all: allCount,
+                telegraphic: telegraphicCount,
+                withinBank: withinBankCount,
+            });
+
             filterTableData(selectedCategory);
         }
     }, [dashboardState.data, selectedCategory]);
@@ -72,7 +91,6 @@ const Dashboard: React.FC = () => {
                 <Flex width={170}>
                     <Tag sx={{maxWidth:'200px'}} size='medium' type={params.value?.type ? params.value.type : ""} label={params.value?.label} />
                 </Flex>
-                
             ),
         },
     ];
@@ -113,40 +131,42 @@ const Dashboard: React.FC = () => {
                         </Flex>
 
                         <Box className='flex p-3 gap-5'>
-                            {pendingState?.data?.map((item: any, index: any) => {
-                                const category = Object.keys(item)[0];
-                                const details = item[category][0];
-                                const categoryTitles: any = {
-                                    'pending-all': 'All',
-                                    'telegraphics': 'Telegraphic',
-                                    'withinbank': 'Within Bank',
-                                };
-                                return (
-                                    
-                                    <Card 
-                                        key={index} 
-                                        className={`shadow-none border-solid border mt-2 w-2/5 p-3 rounded-lg ${selectedCategory === category ? 'bg-blue-50' : ''}`}
-                                        onClick={() => handleCardClick(category)}
-                                    >
-                                        <Box className='flex mt-1 mb-1 justify-between'>
-                                            <Text variant='h5' className="font-semibold">{categoryTitles[category]}</Text>
-                                            <IconButton className="text-gray-500 -m-3"><ChevronRightSmall /></IconButton>
-                                        </Box>
-
-                                        <Text variant='label3' className="text-gray-500 font-medium">
-                                            <Text variant='label3' className='text-gray-800 font-semibold'>{details.count}</Text> Individual Transactions
-                                        </Text>
-                                        <Div className='flex justify-between'>
-                                            <Text variant='label3' className="text-gray-500 font-medium">
-                                               <Text variant='label3' className='text-gray-800 font-semibold'>{details.count}</Text> x Files
-                                            </Text>
-                                            <Text variant='label3' className="text-md font-semibold text-gray-600">
-                                                {details.amount}
-                                            </Text>
-                                        </Div>
-                                    </Card>
-                                );
-                            })}
+                            <Card 
+                                className={`shadow-none border-solid border mt-2 w-2/5 p-3 rounded-lg ${selectedCategory === 'pending-all' ? 'bg-blue-50' : ''}`}
+                                onClick={() => handleCardClick('pending-all')}
+                            >
+                                <Box className='flex mt-1 mb-1 justify-between'>
+                                    <Text variant='h5' className="font-semibold">All</Text>
+                                    <IconButton className="text-gray-500 -m-3"><ChevronRightSmall /></IconButton>
+                                </Box>
+                                <Text variant='label3' className="text-gray-500 font-medium">
+                                    <Text variant='label3' className='text-gray-800 font-semibold'>{pendingCounts.all}</Text> Individual Transactions
+                                </Text>
+                            </Card>
+                            <Card 
+                                className={`shadow-none border-solid border mt-2 w-2/5 p-3 rounded-lg ${selectedCategory === 'telegraphics' ? 'bg-blue-50' : ''}`}
+                                onClick={() => handleCardClick('telegraphics')}
+                            >
+                                <Box className='flex mt-1 mb-1 justify-between'>
+                                    <Text variant='h5' className="font-semibold">Telegraphic</Text>
+                                    <IconButton className="text-gray-500 -m-3"><ChevronRightSmall /></IconButton>
+                                </Box>
+                                <Text variant='label3' className="text-gray-500 font-medium">
+                                    <Text variant='label3' className='text-gray-800 font-semibold'>{pendingCounts.telegraphic}</Text> Individual Transactions
+                                </Text>
+                            </Card>
+                            <Card 
+                                className={`shadow-none border-solid border mt-2 w-2/5 p-3 rounded-lg ${selectedCategory === 'withinbank' ? 'bg-blue-50' : ''}`}
+                                onClick={() => handleCardClick('withinbank')}
+                            >
+                                <Box className='flex mt-1 mb-1 justify-between'>
+                                    <Text variant='h5' className="font-semibold">Within Bank</Text>
+                                    <IconButton className="text-gray-500 -m-3"><ChevronRightSmall /></IconButton>
+                                </Box>
+                                <Text variant='label3' className="text-gray-500 font-medium">
+                                    <Text variant='label3' className='text-gray-800 font-semibold'>{pendingCounts.withinBank}</Text> Individual Transactions
+                                </Text>
+                            </Card>
                         </Box>
                     </Card>
                 </Grid>
