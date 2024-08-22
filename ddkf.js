@@ -1,49 +1,50 @@
-import React, { ReactNode } from 'react';
-
-interface ErrorBoundaryProps {
-  children: ReactNode;
-}
-
-interface ErrorBoundaryState {
-  hasError: boolean;
-}
-
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Error caught by ErrorBoundary", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100">
-          <div className="max-w-md p-6 bg-white rounded-lg shadow-lg text-center">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Oops! Something went wrong.</h1>
-            <p className="text-gray-700 mb-4">
-              We're sorry, but an unexpected error has occurred. Please try refreshing the page or contact support if the problem persists.
-            </p>
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-              onClick={() => window.location.reload()}
-            >
-              Refresh Page
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-export default ErrorBoundary;
+{
+      "transactionType": {
+        "name": "Within Bank Transfer"
+      },
+      "conversionRate": 1,
+      "dealReference": {
+        "dealReferenceCode": "SOMEDEAL",
+        "dealRate": "3.04 AED"
+      },
+      "transactionStatus": {
+        "status": "Approved"
+      },
+      "paymentDetails": {
+        "paymentDate": "2024-08-20T00:00:00.000Z",
+        "valueDate": "2024-08-20T00:00:00.000Z",
+        "chargeType": "66bf54c5ec6b95f6d560100c",
+        "debitedAmount": 1000,
+        "paymentAmount": 897,
+        "paymentDetails": "Some details",
+        "paymentCurrency": "AED"
+      },
+      "transactionId": "-O4igiA0OgZn_FLcika0",
+      "referenceId": "DEW012024UTL",
+      "submittedAt": "2024-08-20T00:00:00.000Z",
+      "debitAccount": {
+        "accountNumber": "123456789",
+        "accountName": "John Doe",
+        "accountType": "Savings",
+        "balance": 4990,
+        "currencyCode": "USD"
+      },
+      "beneficiary": {
+        "beneficiaryAccountNumber": "9876543210",
+        "beneficiaryIBAN": "DE89370400440532013000123456789000",
+        "beneficiaryName": "Alice Johnson",
+        "beneficiaryNickName": "Alice",
+        "beneficiaryBankName": "Deutsche Bank",
+        "beneficiaryCountry": "Germany",
+        "currencyCode": "EUR"
+      },
+      "additionalDetails": {
+        "purposeOfTransfer": "Receive Money",
+        "purposeOfPayment": "Test Purpose",
+        "customerReference": "Test Payment Reference",
+        "authoriser": "AT001",
+        "applicableCharges": 1,
+        "disclaimerText": "This is disclaimer text",
+        "authoriserRules": "Some Rules"
+      }
+    },
