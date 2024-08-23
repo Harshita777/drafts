@@ -186,3 +186,35 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
+
+
+
+{
+  "data": [
+    {
+      "transactionType": {
+        "name": "File Upload"
+      },
+      "debitedAmount": 1000,
+      "paymentAmount": 897,
+      "paymentCurrency": "AED",
+      "transactionStatus": {
+        "status": "Ready for Verification"
+      },
+      "paymentDetails": {
+        "debitedAmount": 1000,
+        "paymentAmount": 897
+      },
+      "transactionId": "-O4igiA0OgZn_FLcika0",
+      "referenceId": "DEW012024UTL",
+      "initiateDate": "2024-08-20T00:00:00.000Z"
+    }
+ "allTransaction": 99,
+  "individualWithInBankTransaction": 37,
+  "individualWithInBankAmount": 111186539,
+  "individualTelegraphicTransaction": 14,
+  "individualTelegraphicAmount": 3038,
+  "filesTransaction": 10,
+  "fileAmount": 14397
+}
