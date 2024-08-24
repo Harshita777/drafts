@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Box, Card, Grid, Text, Div, Tag, DataGrid } from '@enbdleap/react-ui';
 import { useNavigate } from 'react-router-dom';
 import { FETCH_TRANSACTION_SUMMARY_REQUEST } from '../../../redux/actions/DashboardActions';
-import { statusTags, transactionPendingColumns, transactionSummaryColumns } from '../../../config/config';
+import { statusTags, transactionSummaryColumns } from '../../../config/config';
 import { infoStore } from '../../../services/infoStore';
 
 interface PendingActivitiesProps {
@@ -40,45 +40,35 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
   const filteredData = transactionSummaryState.data || [];
 
   const allTransactions = filteredData.filter((item: any) =>
-    (item.transactionType.name.includes("Telegraphic Transfer") || item.transactionType.name.includes("Within Bank Transfer") || item.transactionType.name.includes("File Upload")) &&
-    (item.transactionStatus.status === 'Pending Authorization' || item.transactionStatus.status === 'Ready to Verify')
+    (item.transactionType.name.includes("Telegraphic Transfer") ||
+      item.transactionType.name.includes("Within Bank Transfer") ||
+      item.transactionType.name.includes("File Upload")) &&
+    (item.transactionStatus.status === 'Pending Authorization' ||
+      item.transactionStatus.status === 'Ready to Verify')
   );
 
-  const singleTransactions = allTransactions.filter((item: any) =>
-    item.transactionType.name.includes("Telegraphic Transfer") || item.transactionType.name.includes("Within Bank Transfer") ||item.transactionType.name.includes("File Upload") &&
-    (item.transactionStatus.status === 'Pending Authorization' || item.transactionStatus.status === 'Ready to Verify')
-  );
-
-  const fileTransactions = allTransactions.filter((item: any) =>
-    item.transactionType.name.includes("File Upload")
-  );
-
-  const allTransactionCount = allTransactions.length;
-  const singleTransactionCount = singleTransactions.length;
-  const fileTransactionCount = fileTransactions.length;
-
-  const allAmount = allTransactions.reduce((sum: number, item: any) => sum + (item.debitAccount?.balance || 0), 0);
-  const singleAmount = singleTransactions.reduce((sum: number, item: any) => sum + (item.debitAccount?.balance || 0), 0);
-  const fileAmount = fileTransactions.reduce((sum: number, item: any) => sum + (item.debitAccount?.balance || 0), 0);
-
-  const filteredRows = transactionSummaryState.data
-    ? transactionSummaryState.data
-      .filter((item: any) =>
-        transferType === 'All' ? ( (item.transactionStatus.status === 'Pending Authorization')||(item.transactionStatus.status === 'Ready to Verify')) : item.transactionType.name.includes(transferType)
-      )
-      .map((item: any, index: number) => ({
-        id: index + 1,
-          date: item.submittedAt,
-          amount: item.debitAccount?.balance,
-          customer: item.additionalDetails.customerReference,
-          fileType: item.transactionType?.name,
-          status: statusTags[item.transactionStatus.status],
-          transactionId: item.transactionId,
-          referenceId: item.referenceId,
-          total: "..",
-          rejection: ".."
-      }))
-    : [];
+  const filteredRows = allTransactions.filter((item: any) => {
+    if (transferType === 'All') {
+      return true;
+    } else if (transferType === 'Telegraphic Transfer') {
+      return item.transactionType.name.includes("Telegraphic Transfer") ||
+             item.transactionType.name.includes("Within Bank Transfer");
+    } else if (transferType === 'File Upload') {
+      return item.transactionType.name.includes("File Upload");
+    }
+    return false;
+  }).map((item: any, index: number) => ({
+    id: index + 1,
+    date: item.submittedAt,
+    amount: item.debitAccount?.balance,
+    customer: item.additionalDetails.customerReference,
+    fileType: item.transactionType?.name,
+    status: statusTags[item.transactionStatus.status],
+    transactionId: item.transactionId,
+    referenceId: item.referenceId,
+    total: "..",
+    rejection: ".."
+  }));
 
   const GridTableProps = {
     rows: filteredRows,
@@ -120,66 +110,23 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
               <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-bold'>
-                    {allTransactionCount}
+                    {allTransactions.length}
                   </Text>
 
                 </Box>
                 <Text variant='label3' className='text-gray-500 font-medium'>
-                  Total Transaction
+                  Total Transactions
                 </Text>
                 <Div className='flex justify-between'>
 
                   <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                    {allAmount} AED
+                    {allTransactions.reduce((sum: number, item: any) => sum + (item.debitAccount?.balance || 0), 0)} AED
                   </Text>
                 </Div>
               </Card>
 
             </Box>
-            <Box className='flex  flex-1 p-3 gap-5'>
 
-
-              <Card className='shadow-none border-solid w-full border mt-2 w-2/5 p-3 rounded-lg'>
-                <Box className='flex justify-between'>
-                  <Text variant='h5' className='font-bold'>
-                    {singleTransactionCount}
-                  </Text>
-
-                </Box>
-                <Text variant='label3' className='text-gray-500 font-medium'>
-                  Single Transaction
-                </Text>
-                <Div className='flex justify-between'>
-
-                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                    {singleAmount} AED
-                  </Text>
-                </Div>
-              </Card>
-
-            </Box>
-            <Box className='flex flex-1 p-3 gap-5'>
-
-
-              <Card className='shadow-none border-solid w-full border mt-2 w-2/5 p-3 rounded-lg'>
-                <Box className='flex justify-between'>
-                  <Text variant='h5' className='font-bold'>
-                    {fileTransactionCount}
-                  </Text>
-
-                </Box>
-                <Text variant='label3' className='text-gray-500 font-medium'>
-                  Files Transaction
-                </Text>
-                <Div className='flex justify-between'>
-
-                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                    {fileAmount} AED
-                  </Text>
-                </Div>
-              </Card>
-
-            </Box>
           </Card>
 
         </Grid>
