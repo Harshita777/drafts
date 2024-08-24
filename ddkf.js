@@ -44,7 +44,8 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
       item.transactionType.name.includes("Within Bank Transfer") ||
       item.transactionType.name.includes("File Upload")) &&
     (item.transactionStatus.status === 'Pending Authorization' ||
-      item.transactionStatus.status === 'Ready to Verify')
+      item.transactionStatus.status === 'Ready to Verify' ||
+      item.transactionStatus.status === 'Ready to Approve')
   );
 
   const filteredRows = allTransactions.filter((item: any) => {
@@ -70,6 +71,9 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
     rejection: ".."
   }));
 
+  const countByStatus = (status: string) => 
+    filteredRows.filter((item: any) => item.status.label === status).length;
+
   const GridTableProps = {
     rows: filteredRows,
     columns: [
@@ -80,7 +84,7 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
         headerName: 'Status',
         renderCell: (params: any) => (
           <div>
-            <Tag sx={{maxWidth:'160px'}} size='medium' type={params?.value?.type} label={params?.value?.label} />
+            <Tag sx={{ maxWidth: '160px' }} size='medium' type={params?.value?.type} label={params?.value?.label} />
           </div>
         ),
       },
@@ -101,34 +105,81 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
         <Card className='bg-blue-50 w-full flex justify-between'></Card>
       </Grid>
 
-      <Grid container spacing={2} className='px-7 mt-28 '>
-        <Grid item xs={12}>
-          <Card className='flex shadow-none  p-2 h-auto border rounded-1xl' >
-            <Box className='flex  flex-1 p-3 gap-5 '>
-
-
+      <Grid container spacing={2} className='px-7 mt-28'>
+        <Grid item xs={4}>
+          <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
+            <Box className='flex flex-1 p-3 gap-5'>
               <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-bold'>
-                    {allTransactions.length}
+                    {countByStatus('Pending Authorization')}
                   </Text>
-
                 </Box>
                 <Text variant='label3' className='text-gray-500 font-medium'>
-                  Total Transactions
+                  Pending Authorization
                 </Text>
                 <Div className='flex justify-between'>
-
                   <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                    {allTransactions.reduce((sum: number, item: any) => sum + (item.debitAccount?.balance || 0), 0)} AED
+                    AED {filteredRows.reduce((sum: number, item: any) => 
+                      item.status.label === 'Pending Authorization' 
+                        ? sum + (item.amount || 0)
+                        : sum, 0
+                    )}
                   </Text>
                 </Div>
               </Card>
-
             </Box>
-
           </Card>
-
+        </Grid>
+        <Grid item xs={4}>
+          <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
+            <Box className='flex flex-1 p-3 gap-5'>
+              <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-bold'>
+                    {countByStatus('Ready to Verify')}
+                  </Text>
+                </Box>
+                <Text variant='label3' className='text-gray-500 font-medium'>
+                  Ready to Verify
+                </Text>
+                <Div className='flex justify-between'>
+                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
+                    AED {filteredRows.reduce((sum: number, item: any) => 
+                      item.status.label === 'Ready to Verify' 
+                        ? sum + (item.amount || 0)
+                        : sum, 0
+                    )}
+                  </Text>
+                </Div>
+              </Card>
+            </Box>
+          </Card>
+        </Grid>
+        <Grid item xs={4}>
+          <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
+            <Box className='flex flex-1 p-3 gap-5'>
+              <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-bold'>
+                    {countByStatus('Ready to Approve')}
+                  </Text>
+                </Box>
+                <Text variant='label3' className='text-gray-500 font-medium'>
+                  Ready to Approve
+                </Text>
+                <Div className='flex justify-between'>
+                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
+                    AED {filteredRows.reduce((sum: number, item: any) => 
+                      item.status.label === 'Ready to Approve' 
+                        ? sum + (item.amount || 0)
+                        : sum, 0
+                    )}
+                  </Text>
+                </Div>
+              </Card>
+            </Box>
+          </Card>
         </Grid>
         <Grid item xs={12} className='mb-4'>
           <Card className='shadow-none p-2 h-auto border rounded-1xl' elevation={3}>
