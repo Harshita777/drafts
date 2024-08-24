@@ -1,94 +1,207 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Box, Card, Grid, Text, Div, Tag, DataGrid } from '@enbdleap/react-ui';
+import { useNavigate } from 'react-router-dom';
+import { FETCH_TRANSACTION_SUMMARY_REQUEST } from '../../../redux/actions/DashboardActions';
+import { statusTags, transactionPendingColumns, transactionSummaryColumns } from '../../../config/config';
+import { infoStore } from '../../../services/infoStore';
 
-interface UserContextType {
-    username: string;
-    entitlements: string;
-    otpVerified: boolean;
-    setUsername: (username: string) => void;
-    setEntitlements: (entitlements: string) => void;
-    setOtpVerified: (otpVerified: boolean) => void;
+interface PendingActivitiesProps {
+  transferType: string;
 }
 
-const UserContext = createContext<UserContextType | undefined>(undefined);
+const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
+  const userId = infoStore.getSubscriberId();
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [username, setUsername] = useState<string>('');
-    const [entitlements, setEntitlements] = useState<string>('');
-    const [otpVerified, setOtpVerified] = useState<boolean>(false);
-
-    return (
-        <UserContext.Provider value={{ username, entitlements, otpVerified, setUsername, setEntitlements, setOtpVerified }}>
-            {children}
-        </UserContext.Provider>
-    );
-};
-
-export const useUser = (): UserContextType => {
-    const context = useContext(UserContext);
-    if (!context) {
-        throw new Error('useUser must be used within a UserProvider');
+  useEffect(() => {
+    if (userId) {
+      dispatch({ type: FETCH_TRANSACTION_SUMMARY_REQUEST, payload: { userId } });
     }
-    return context;
+  }, [dispatch, userId]);
+
+  const handleCellClick = (params: any) => {
+    if (params.row && params.row.status && params.row.status.label) {
+      const status = params.row.status?.label;
+      const type = params.row.fileType;
+      const typeUrl = type.toString().toLowerCase().split(' ').join('-');
+      const rfid = params.row.referenceId;
+
+      if (status === 'Pending Authorization' && type === "File Upload") {
+        navigate(`/dashboard/payments/file-verify`, { state: rfid });
+      } else if (status === 'Pending Authorization' && (type === "Telegraphic Transfer" || type === "Within Bank Transfer")) {
+        navigate(`/dashboard/payments/${typeUrl}?rfId=${rfid}`);
+      }
+    }
+  };
+
+  const filteredData = transactionSummaryState.data || [];
+
+  const allTransactions = filteredData.filter((item: any) =>
+    (item.transactionType.name.includes("Telegraphic Transfer") || item.transactionType.name.includes("Within Bank Transfer") || item.transactionType.name.includes("File Upload")) &&
+    (item.transactionStatus.status === 'Pending Authorization' || item.transactionStatus.status === 'Ready to Verify')
+  );
+
+  const singleTransactions = allTransactions.filter((item: any) =>
+    item.transactionType.name.includes("Telegraphic Transfer") || item.transactionType.name.includes("Within Bank Transfer") ||item.transactionType.name.includes("File Upload") &&
+    (item.transactionStatus.status === 'Pending Authorization' || item.transactionStatus.status === 'Ready to Verify')
+  );
+
+  const fileTransactions = allTransactions.filter((item: any) =>
+    item.transactionType.name.includes("File Upload")
+  );
+
+  const allTransactionCount = allTransactions.length;
+  const singleTransactionCount = singleTransactions.length;
+  const fileTransactionCount = fileTransactions.length;
+
+  const allAmount = allTransactions.reduce((sum: number, item: any) => sum + (item.debitAccount?.balance || 0), 0);
+  const singleAmount = singleTransactions.reduce((sum: number, item: any) => sum + (item.debitAccount?.balance || 0), 0);
+  const fileAmount = fileTransactions.reduce((sum: number, item: any) => sum + (item.debitAccount?.balance || 0), 0);
+
+  const filteredRows = transactionSummaryState.data
+    ? transactionSummaryState.data
+      .filter((item: any) =>
+        transferType === 'All' ? ( (item.transactionStatus.status === 'Pending Authorization')||(item.transactionStatus.status === 'Ready to Verify')) : item.transactionType.name.includes(transferType)
+      )
+      .map((item: any, index: number) => ({
+        id: index + 1,
+          date: item.submittedAt,
+          amount: item.debitAccount?.balance,
+          customer: item.additionalDetails.customerReference,
+          fileType: item.transactionType?.name,
+          status: statusTags[item.transactionStatus.status],
+          transactionId: item.transactionId,
+          referenceId: item.referenceId,
+          total: "..",
+          rejection: ".."
+      }))
+    : [];
+
+  const GridTableProps = {
+    rows: filteredRows,
+    columns: [
+      ...transactionSummaryColumns,
+      {
+        field: 'status',
+        width: 190,
+        headerName: 'Status',
+        renderCell: (params: any) => (
+          <div>
+            <Tag sx={{maxWidth:'160px'}} size='medium' type={params?.value?.type} label={params?.value?.label} />
+          </div>
+        ),
+      },
+    ],
+    hidePagination: false,
+    checkboxSelection: false,
+    autoPageSize: false,
+    disableColumnMenu: true,
+    autoHeight: true,
+    onRowClick: handleCellClick,
+    disableColumnFilter: false,
+    hideFooterRowCount: false,
+  };
+
+  return (
+    <>
+      <Grid container className='w-full h-auto shadow-bottom' margin={0}>
+        <Card className='bg-blue-50 w-full flex justify-between'></Card>
+      </Grid>
+
+      <Grid container spacing={2} className='px-7 mt-28 '>
+        <Grid item xs={12}>
+          <Card className='flex shadow-none  p-2 h-auto border rounded-1xl' >
+            <Box className='flex  flex-1 p-3 gap-5 '>
+
+
+              <Card className='shadow-none border-solid w-full border mt-2 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-bold'>
+                    {allTransactionCount}
+                  </Text>
+
+                </Box>
+                <Text variant='label3' className='text-gray-500 font-medium'>
+                  Total Transaction
+                </Text>
+                <Div className='flex justify-between'>
+
+                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
+                    {allAmount} AED
+                  </Text>
+                </Div>
+              </Card>
+
+            </Box>
+            <Box className='flex  flex-1 p-3 gap-5'>
+
+
+              <Card className='shadow-none border-solid w-full border mt-2 w-2/5 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-bold'>
+                    {singleTransactionCount}
+                  </Text>
+
+                </Box>
+                <Text variant='label3' className='text-gray-500 font-medium'>
+                  Single Transaction
+                </Text>
+                <Div className='flex justify-between'>
+
+                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
+                    {singleAmount} AED
+                  </Text>
+                </Div>
+              </Card>
+
+            </Box>
+            <Box className='flex flex-1 p-3 gap-5'>
+
+
+              <Card className='shadow-none border-solid w-full border mt-2 w-2/5 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-bold'>
+                    {fileTransactionCount}
+                  </Text>
+
+                </Box>
+                <Text variant='label3' className='text-gray-500 font-medium'>
+                  Files Transaction
+                </Text>
+                <Div className='flex justify-between'>
+
+                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
+                    {fileAmount} AED
+                  </Text>
+                </Div>
+              </Card>
+
+            </Box>
+          </Card>
+
+        </Grid>
+        <Grid item xs={12} className='mb-4'>
+          <Card className='shadow-none p-2 h-auto border rounded-1xl' elevation={3}>
+            <Box className='flex justify-between'>
+              <Text variant='h4' className='mt-4 font-medium'>
+                Transactions Summary
+              </Text>
+            </Box>
+            <Text variant='label1' className='text-gray-400'>
+              Showing 1 - 10 out of {filteredRows.length}
+            </Text>
+
+            {filteredRows.length > 0 && (
+              <DataGrid initialState={{ pagination: { paginationModel: { pageSize: 10 } } }} className='mt-4 text-gray-600 z-0 cursor-pointer ' {...GridTableProps} />
+            )}
+          </Card>
+        </Grid>
+      </Grid>
+    </>
+  );
 };
 
-
-
-
-
-import React, { Suspense, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import SnackbarWrapper from '../utils/SnackbarWrapper';
-import { useUser } from '../context/UserContext';
-import { Roles } from '../constants/Roles.enum';
-
-const Login = React.lazy(() => import('authMFE/Login'));
-
-export const LoginPage: React.FC = () => {
-    const [showSnackMessage, setShowSnackMessage] = useState<boolean>(false);
-    const [error, setError] = useState<boolean>(false);
-    const navigate = useNavigate();
-
-    const { setUsername, setEntitlements, setOtpVerified } = useUser();
-    const otpReducerState = useSelector((state: any) => state.otpReducer);
-
-    const onLoginHandler = (data: any) => {
-        if (!data) {
-            setError(true);
-            // TODO display error or appropriate UX
-        }
-
-        if (data.user) {
-            // Store values from otpReducerState in the context
-            setUsername(otpReducerState.userName);
-            setEntitlements(otpReducerState.entitlements);
-            setOtpVerified(otpReducerState.isOtpVerified);
-
-            // Save token and session info
-            infoStore.saveAccessToken('jwtToken', data.user.jwtToken);
-            infoStore.saveUserSessionInfo(data.user.userId, data.user.subscriptionId, data.user.role);
-            const url = data.user.role === Roles.ADMINISTRATOR ? '/entitlement' : '/dashboard';
-            navigate(url);
-        }
-    };
-
-    useEffect(() => {
-        const urlParams = window.location.search;
-        const params = new URLSearchParams(urlParams);
-        const logout = params.get('logout');
-
-        if (logout === 'success') {
-            setShowSnackMessage(true);
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } else {
-            setShowSnackMessage(false);
-        }
-    }, []);
-
-    return (
-        <Suspense fallback="Loading...">
-            <SnackbarWrapper open={showSnackMessage} onClose={setShowSnackMessage} />
-            <Login onLoginHandler={onLoginHandler} />
-        </Suspense>
-    );
-};
+export default PendingActivities;
