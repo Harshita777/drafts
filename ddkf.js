@@ -1,44 +1,41 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Box, Card, Grid, Text, Div, Tag, DataGrid } from '@enbdleap/react-ui';
+import { Box, Card, Grid, GridTable, Text, Tag, Div, DataGrid, Flex } from '@enbdleap/react-ui';
 import { useNavigate } from 'react-router-dom';
 import { FETCH_TRANSACTION_SUMMARY_REQUEST } from '../../../redux/actions/DashboardActions';
 import { statusTags, transactionSummaryColumns } from '../../../config/config';
 import { infoStore } from '../../../services/infoStore';
 
-// Define the interface for the component props
-interface PendingActivitiesProps {
+interface PaymentProps {
   transferType: string;
 }
 
-// Main component definition
-const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) => {
+const Payment: React.FC<PaymentProps> = ({ transferType }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  // Accessing the transaction summary state from the Redux store
   const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
-
-  // Getting userId from a custom info store service
-  const userId = infoStore.getSubscriberId();
-
-  // Fetch transaction summary data when the component mounts or when the userId changes
+  const userId = infoStore.getSubscriberId()
   useEffect(() => {
-    if (userId) {
-      dispatch({ type: FETCH_TRANSACTION_SUMMARY_REQUEST, payload: { userId } });
+    if(userId){
+      dispatch({
+        type: FETCH_TRANSACTION_SUMMARY_REQUEST,
+        payload: { userId: userId }
+      });
     }
-  }, [dispatch, userId]);
+    
+  }, [dispatch,userId]);
 
-  // Handle row click based on the status and transaction type
   const handleCellClick = (params: any) => {
+
     if (params.row && params.row.status && params.row.status.label) {
+
       const status = params.row.status?.label;
       const type = params.row.fileType;
       const typeUrl = type.toString().toLowerCase().split(' ').join('-');
-      const rfid = params.row.referenceId;
+      const rfid = params.row.referenceId
+      
 
-      // Redirecting based on the transaction type and status
-      if (status === 'Ready for Verification' && type === "File Upload") {
+      if (((status === 'Pending Authorization')||(status === 'Ready for Verification')) && type === "File Upload") {
         navigate(`/dashboard/payments/file-verify`, { state: rfid });
       } else if (status === 'Pending Authorization' && (type === "Telegraphic Transfer" || type === "Within Bank Transfer")) {
         navigate(`/dashboard/payments/${typeUrl}?rfId=${rfid}`);
@@ -46,126 +43,119 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
     }
   };
 
-  // Filter the data based on the transfer type
-  const filteredData = transactionSummaryState.data || [];
-  const allTransactions = filteredData.filter((item: any) =>
-    (item.transactionType.name.includes("Telegraphic Transfer") ||
-      item.transactionType.name.includes("Within Bank Transfer") ||
-      item.transactionType.name.includes("File Upload")) &&
-    (item.transactionStatus.status === 'Pending Authorization' ||
-      item.transactionStatus.status === 'Ready for Verification')
-  );
 
-  // Further filter rows based on the selected transfer type
-  const filteredRows = allTransactions.filter((item: any) => {
-    if (transferType === 'All') {
-      return true;
-    } else if (transferType === 'Within Bank Transfer') {
-      return item.transactionType.name.includes("File Upload") ||
-             item.transactionType.name.includes("Within Bank Transfer");
-    } else if (transferType === 'Telegraphic Transfer') {
-      return item.transactionType.name.includes("Telegraphic Transfer");
-    }
-    return false;
-  }).map((item: any, index: number) => ({
-    id: index + 1,
-    date: item.submittedAt,
-    amount: item.debitAccount?.balance,
-    customer: item.additionalDetails.customerReference,
-    fileType: item.transactionType?.name,
-    status: statusTags[item.transactionStatus.status],
-    transactionId: item.transactionId,
-    referenceId: item.referenceId,
-    total: "..",
-    rejection: ".."
-  }));
 
-  // Utility function to count rows by status
-  const countByStatus = (status: string) => 
-    filteredRows.filter((item: any) => item.status.label === status).length;
 
-  // DataGrid props configuration
+  const rows = transactionSummaryState.data
+    ? transactionSummaryState.data
+      .filter((item: any) => {
+        if (transferType === "all") return true;
+        if (transferType === "single") {
+          return item.transactionType.name === "Telegraphic Transfer" ||
+            item.transactionType.name === "Within Bank Transfer";
+        }
+        if (transferType === "file-upload") {
+          return item.transactionType.name === "File Upload";
+        }
+        return false;
+      })
+      .map((item: any, index: number) => {
+        
+        return {
+          id: index + 1,
+          date: item.submittedAt,
+          amount: item.debitAccount?.balance,
+          customer: item.additionalDetails.customerReference,
+          fileType: item.transactionType?.name,
+          status: statusTags[item.transactionStatus.status],
+          transactionId: item.transactionId,
+          referenceId: item.referenceId,
+          total: "..",
+          rejection: ".."
+        }
+      })
+    : [];
+
   const GridTableProps = {
-    rows: filteredRows,
+
+    rows: rows,
     columns: [
+      
       ...transactionSummaryColumns,
       {
         field: 'status',
-        width: 190,
+        flex:1,
         headerName: 'Status',
         renderCell: (params: any) => (
-          <div>
-            <Tag sx={{ maxWidth: '160px' }} size='medium' type={params?.value?.type} label={params?.value?.label} />
-          </div>
+          <Flex width={200}>
+                    <Tag sx={{maxWidth:'160px'}} size='medium' type={params.value?.type ? params.value.type : ""} label={params.value?.label} />
+                </Flex>
         ),
       },
+      {
+        field: 'rejection',
+        flex:1,
+        headerName: 'Rejection Reason',
+      }
     ],
-    hidePagination: false,
+    hidePagination: true,
     checkboxSelection: false,
     autoPageSize: false,
     disableColumnMenu: true,
     autoHeight: true,
     onRowClick: handleCellClick,
-    disableColumnFilter: false,
+    disableColumnFilter: true,
     hideFooterRowCount: false,
   };
 
   return (
     <>
-      {/* Summary header section */}
       <Grid container className='w-full h-auto shadow-bottom' margin={0}>
         <Card className='bg-blue-50 w-full flex justify-between'></Card>
       </Grid>
-
-      {/* Main content grid layout */}
       <Grid container spacing={2} className='px-7 mt-28'>
         <Grid item xs={12}>
-          {/* Transaction Summary Cards */}
-          <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
-            <Box className='flex flex-1 p-3 gap-5'>
-              {/* Card 1: Total Transactions */}
+        <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
+            <Box className=' flex flex-1 p-3 gap-5'>
               <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-bold'>
-                    {transactionSummaryState.allTransaction}
+                  {transactionSummaryState.allTransaction}
                   </Text>
                 </Box>
                 <Text variant='label3' className='text-gray-500 font-medium'>
                   Total Transaction
                 </Text>
                 <Div className='flex justify-between'>
+
                   <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                    {transactionSummaryState.allAmount} AED
+                  {transactionSummaryState.allAmount} AED
                   </Text>
                 </Div>
               </Card>
             </Box>
-
-            {/* Card 2: Single Transactions */}
             <Box className='flex flex-1 p-3 gap-5'>
               <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-bold'>
-                    {transactionSummaryState.individualTransaction}
+                  {transactionSummaryState.individualTransaction}
                   </Text>
                 </Box>
                 <Text variant='label3' className='text-gray-500 font-medium'>
-                  Single Transaction
+                Single Transaction
                 </Text>
                 <Div className='flex justify-between'>
                   <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                    {transactionSummaryState.individualAmount} AED
+                  {transactionSummaryState.individualAmount} AED
                   </Text>
                 </Div>
               </Card>
             </Box>
-
-            {/* Card 3: File Transactions */}
             <Box className='flex flex-1 p-3 gap-5'>
-              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
+<Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-bold'>
-                    {transactionSummaryState.filesTransaction}
+                  {transactionSummaryState.filesTransaction}
                   </Text>
                 </Box>
                 <Text variant='label3' className='text-gray-500 font-medium'>
@@ -173,34 +163,28 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
                 </Text>
                 <Div className='flex justify-between'>
                   <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                    {transactionSummaryState.fileAmount} AED
+                  {transactionSummaryState.fileAmount} AED
                   </Text>
                 </Div>
               </Card>
             </Box>
           </Card>
         </Grid>
-
-        {/* Data Grid Section */}
         <Grid item xs={12} className='mb-4'>
-          <Card className='shadow-none p-4 h-auto border rounded-1xl' elevation={3}>
+          <Card className='shadow-none p-4 h-auto border rounded-1xl' elevation={1}>
             <Box className='flex justify-between'>
-              <Text variant='h4' className='mt-4 font-medium'>
+              <Text variant='h4' className='mt-4  font-medium'>
                 Transactions Summary
               </Text>
             </Box>
             <Text variant='label1' className='text-gray-400'>
-              Showing 1 - 10 out of {filteredRows.length}
+            Showing 1 - 10 out of {rows.length}
             </Text>
-
-            {/* Display the data grid if there are rows to show */}
-            {filteredRows.length > 0 && (
-              <DataGrid
-                initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
-                className='mt-4 text-gray-600 border-none  z-0 cursor-pointer '
-                {...GridTableProps}
-              />
-            )}
+            <DataGrid initialState={{
+              pagination: {
+                paginationModel: { pageSize: 10 }
+              },
+            }} className='mt-4 border-none  text-gray-600 cursor-pointer' {...GridTableProps} />
           </Card>
         </Grid>
       </Grid>
@@ -208,4 +192,4 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
   );
 };
 
-export default PendingActivities;
+export default Payment;
