@@ -6,22 +6,30 @@ import { FETCH_TRANSACTION_SUMMARY_REQUEST } from '../../../redux/actions/Dashbo
 import { statusTags, transactionSummaryColumns } from '../../../config/config';
 import { infoStore } from '../../../services/infoStore';
 
+// Define the interface for the component props
 interface PendingActivitiesProps {
   transferType: string;
 }
 
+// Main component definition
 const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Accessing the transaction summary state from the Redux store
   const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
+
+  // Getting userId from a custom info store service
   const userId = infoStore.getSubscriberId();
 
+  // Fetch transaction summary data when the component mounts or when the userId changes
   useEffect(() => {
     if (userId) {
       dispatch({ type: FETCH_TRANSACTION_SUMMARY_REQUEST, payload: { userId } });
     }
   }, [dispatch, userId]);
 
+  // Handle row click based on the status and transaction type
   const handleCellClick = (params: any) => {
     if (params.row && params.row.status && params.row.status.label) {
       const status = params.row.status?.label;
@@ -29,7 +37,8 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
       const typeUrl = type.toString().toLowerCase().split(' ').join('-');
       const rfid = params.row.referenceId;
 
-      if (status ===  'Ready for Verification' && type === "File Upload") {
+      // Redirecting based on the transaction type and status
+      if (status === 'Ready for Verification' && type === "File Upload") {
         navigate(`/dashboard/payments/file-verify`, { state: rfid });
       } else if (status === 'Pending Authorization' && (type === "Telegraphic Transfer" || type === "Within Bank Transfer")) {
         navigate(`/dashboard/payments/${typeUrl}?rfId=${rfid}`);
@@ -37,8 +46,8 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
     }
   };
 
+  // Filter the data based on the transfer type
   const filteredData = transactionSummaryState.data || [];
-
   const allTransactions = filteredData.filter((item: any) =>
     (item.transactionType.name.includes("Telegraphic Transfer") ||
       item.transactionType.name.includes("Within Bank Transfer") ||
@@ -47,6 +56,7 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
       item.transactionStatus.status === 'Ready for Verification')
   );
 
+  // Further filter rows based on the selected transfer type
   const filteredRows = allTransactions.filter((item: any) => {
     if (transferType === 'All') {
       return true;
@@ -70,9 +80,11 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
     rejection: ".."
   }));
 
+  // Utility function to count rows by status
   const countByStatus = (status: string) => 
     filteredRows.filter((item: any) => item.status.label === status).length;
 
+  // DataGrid props configuration
   const GridTableProps = {
     rows: filteredRows,
     columns: [
@@ -100,53 +112,60 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
 
   return (
     <>
+      {/* Summary header section */}
       <Grid container className='w-full h-auto shadow-bottom' margin={0}>
         <Card className='bg-blue-50 w-full flex justify-between'></Card>
       </Grid>
 
+      {/* Main content grid layout */}
       <Grid container spacing={2} className='px-7 mt-28'>
-      <Grid item xs={12}>
-        <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
-            <Box className=' flex flex-1 p-3 gap-5'>
+        <Grid item xs={12}>
+          {/* Transaction Summary Cards */}
+          <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
+            <Box className='flex flex-1 p-3 gap-5'>
+              {/* Card 1: Total Transactions */}
               <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-bold'>
-                  {transactionSummaryState.allTransaction}
+                    {transactionSummaryState.allTransaction}
                   </Text>
                 </Box>
                 <Text variant='label3' className='text-gray-500 font-medium'>
                   Total Transaction
                 </Text>
                 <Div className='flex justify-between'>
-
                   <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                  {transactionSummaryState.allAmount} AED
+                    {transactionSummaryState.allAmount} AED
                   </Text>
                 </Div>
               </Card>
             </Box>
+
+            {/* Card 2: Single Transactions */}
             <Box className='flex flex-1 p-3 gap-5'>
               <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-bold'>
-                  {transactionSummaryState.individualTransaction}
+                    {transactionSummaryState.individualTransaction}
                   </Text>
                 </Box>
                 <Text variant='label3' className='text-gray-500 font-medium'>
-                Single Transaction
+                  Single Transaction
                 </Text>
                 <Div className='flex justify-between'>
                   <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                  {transactionSummaryState.individualAmount} AED
+                    {transactionSummaryState.individualAmount} AED
                   </Text>
                 </Div>
               </Card>
             </Box>
+
+            {/* Card 3: File Transactions */}
             <Box className='flex flex-1 p-3 gap-5'>
-<Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
+              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
                 <Box className='flex justify-between'>
                   <Text variant='h5' className='font-bold'>
-                  {transactionSummaryState.filesTransaction}
+                    {transactionSummaryState.filesTransaction}
                   </Text>
                 </Box>
                 <Text variant='label3' className='text-gray-500 font-medium'>
@@ -154,13 +173,15 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
                 </Text>
                 <Div className='flex justify-between'>
                   <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                  {transactionSummaryState.fileAmount} AED
+                    {transactionSummaryState.fileAmount} AED
                   </Text>
                 </Div>
               </Card>
             </Box>
           </Card>
         </Grid>
+
+        {/* Data Grid Section */}
         <Grid item xs={12} className='mb-4'>
           <Card className='shadow-none p-4 h-auto border rounded-1xl' elevation={3}>
             <Box className='flex justify-between'>
@@ -172,8 +193,13 @@ const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) =
               Showing 1 - 10 out of {filteredRows.length}
             </Text>
 
+            {/* Display the data grid if there are rows to show */}
             {filteredRows.length > 0 && (
-              <DataGrid initialState={{ pagination: { paginationModel: { pageSize: 10 } } }} className='mt-4 text-gray-600 border-none  z-0 cursor-pointer ' {...GridTableProps} />
+              <DataGrid
+                initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+                className='mt-4 text-gray-600 border-none  z-0 cursor-pointer '
+                {...GridTableProps}
+              />
             )}
           </Card>
         </Grid>
