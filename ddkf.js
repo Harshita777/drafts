@@ -1,25 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Box, Card, Grid, Text, Div, Flex, IconButton, DataGrid, Tag } from '@enbdleap/react-ui';
+import { Box, Card, Grid, GridTable, Text, Tag, Div, DataGrid, Flex } from '@enbdleap/react-ui';
 import { useNavigate } from 'react-router-dom';
 import { FETCH_TRANSACTION_SUMMARY_REQUEST } from '../../../redux/actions/DashboardActions';
 import { statusTags, transactionSummaryColumns } from '../../../config/config';
 import { infoStore } from '../../../services/infoStore';
-
 
 interface PaymentProps {
   transferType: string;
 }
 
 const Payment: React.FC<PaymentProps> = ({ transferType }) => {
+  // Initialize dispatch for Redux actions
   const dispatch = useDispatch();
+  
+  // Initialize navigation hook for routing
   const navigate = useNavigate();
+  
+  // Access state from Redux store
   const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
-  const userId = infoStore.getSubscriberId();
-  const [filteredData, setFilteredData] = useState<any[]>([]);
+  
+  // Fetch user ID from infoStore service
+  const userId = infoStore.getSubscriberId()
 
+  // Effect to dispatch action on component mount or userId change
   useEffect(() => {
-    if (userId) {
+    if(userId){
       dispatch({
         type: FETCH_TRANSACTION_SUMMARY_REQUEST,
         payload: { userId: userId }
@@ -27,19 +33,15 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
     }
   }, [dispatch, userId]);
 
-  useEffect(() => {
-    if (transactionSummaryState.data) {
-      filterTableData(transferType);
-    }
-  }, [transactionSummaryState.data, transferType]);
-
+  // Function to handle row clicks in the data grid
   const handleCellClick = (params: any) => {
     if (params.row && params.row.status && params.row.status.label) {
       const status = params.row.status?.label;
       const type = params.row.fileType;
       const typeUrl = type.toString().toLowerCase().split(' ').join('-');
-      const rfid = params.row.referenceId;
+      const rfid = params.row.referenceId
 
+      // Conditional routing based on the transaction status and type
       if (((status === 'Pending Authorization') || (status === 'Ready for Verification')) && type === "File Upload") {
         navigate(`/dashboard/payments/file-verify`, { state: rfid });
       } else if (status === 'Pending Authorization' && (type === "Telegraphic Transfer" || type === "Within Bank Transfer")) {
@@ -48,37 +50,37 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
     }
   };
 
-  const filterTableData = (category: string) => {
-    const data = transactionSummaryState.data || [];
-    let filtered = [];
+  // Filter and map transaction data based on transferType prop
+  const rows = transactionSummaryState.data
+    ? transactionSummaryState.data
+      .filter((item: any) => {
+        if (transferType === "all") return true;
+        if (transferType === "single") {
+          return item.transactionType.name === "Telegraphic Transfer" ||
+            item.transactionType.name === "Within Bank Transfer";
+        }
+        if (transferType === "file-upload") {
+          return item.transactionType.name === "File Upload";
+        }
+        return false;
+      })
+      .map((item: any, index: number) => {
+        return {
+          id: index + 1,
+          date: item.submittedAt,
+          amount: item.debitAccount?.balance,
+          customer: item.additionalDetails.customerReference,
+          fileType: item.transactionType?.name,
+          status: statusTags[item.transactionStatus.status],
+          transactionId: item.transactionId,
+          referenceId: item.referenceId,
+          total: "..",
+          rejection: ".."
+        }
+      })
+    : [];
 
-    if (category === 'all') {
-      filtered = data;
-    } else if (category === 'single') {
-      filtered = data.filter((item: any) => 
-        item.transactionType.name === "Telegraphic Transfer" ||
-        item.transactionType.name === "Within Bank Transfer"
-      );
-    } else if (category === 'file-upload') {
-      filtered = data.filter((item: any) => item.transactionType.name === "File Upload");
-    }
-
-    setFilteredData(filtered);
-  };
-
-  const rows = filteredData.map((item: any, index: number) => ({
-    id: index + 1,
-    date: item.submittedAt,
-    amount: item.debitAccount?.balance,
-    customer: item.additionalDetails.customerReference,
-    fileType: item.transactionType?.name,
-    status: statusTags[item.transactionStatus.status],
-    transactionId: item.transactionId,
-    referenceId: item.referenceId,
-    total: "-",
-    rejection: "-"
-  }));
-
+  // Properties configuration for the GridTable component
   const GridTableProps = {
     rows: rows,
     columns: [
@@ -109,82 +111,83 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
     hideFooterRowCount: false,
   };
 
-  // Prepare the card details for the payment summary
-  const paymentSummaryDetails = [
-    {
-      category: 'all',
-      title: 'All Transactions',
-      count: transactionSummaryState.allTransaction,
-      amount: transactionSummaryState.allAmount,
-    },
-    {
-      category: 'single',
-      title: 'Single Transactions',
-      count: transactionSummaryState.individualTransaction,
-      amount: transactionSummaryState.individualAmount,
-    },
-    {
-      category: 'file-upload',
-      title: 'File Transactions',
-      count: transactionSummaryState.filesTransaction,
-      amount: transactionSummaryState.fileAmount,
-    }
-  ];
-
+  // Render component UI
   return (
     <>
       <Grid container className='w-full h-auto shadow-bottom' margin={0}>
         <Card className='bg-blue-50 w-full flex justify-between'></Card>
       </Grid>
       <Grid container spacing={2} className='px-7 mt-28'>
-         {/* Header and category cards */}
         <Grid item xs={12}>
-          <Box className='flex gap-5'>
-            {paymentSummaryDetails.map((detail, index) => (
-              <Card
-                key={index}
-                className={`shadow-none border-solid w-full border mt-2 p-3 cursor-pointer rounded-lg`}
-                onClick={() => filterTableData(detail.category)}
-              >
-                <Div className='flex justify-between'>
-                  <Div>
-                  <Text variant='label2' className='text-gray-500 font-medium'>
-                  {detail.title}
-                </Text>
-                <Div className='flex justify-between'>
-                  <Text variant='label2' className='text-md mt-2  '>
-                    {detail.amount} AED
-                  </Text>
-                </Div>
-                  </Div>
-                
-                <Box className='flex justify-between items-center'>
-                  <Text variant='h3' className='font-semibold font-xl'>
-                    {detail.count}
+          <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
+            <Box className=' flex flex-1 p-3 gap-5'>
+              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-bold'>
+                    {transactionSummaryState.allTransaction}
                   </Text>
                 </Box>
+                <Text variant='label3' className='text-gray-500 font-medium'>
+                  Total Transaction
+                </Text>
+                <Div className='flex justify-between'>
+                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
+                    {transactionSummaryState.allAmount} AED
+                  </Text>
                 </Div>
-                
-                
               </Card>
-            ))}
-          </Box>
+            </Box>
+            <Box className='flex flex-1 p-3 gap-5'>
+              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-bold'>
+                    {transactionSummaryState.individualTransaction}
+                  </Text>
+                </Box>
+                <Text variant='label3' className='text-gray-500 font-medium'>
+                  Single Transaction
+                </Text>
+                <Div className='flex justify-between'>
+                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
+                    {transactionSummaryState.individualAmount} AED
+                  </Text>
+                </Div>
+              </Card>
+            </Box>
+            <Box className='flex flex-1 p-3 gap-5'>
+              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
+                <Box className='flex justify-between'>
+                  <Text variant='h5' className='font-bold'>
+                    {transactionSummaryState.filesTransaction}
+                  </Text>
+                </Box>
+                <Text variant='label3' className='text-gray-500 font-medium'>
+                  Files Transaction
+                </Text>
+                <Div className='flex justify-between'>
+                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
+                    {transactionSummaryState.fileAmount} AED
+                  </Text>
+                </Div>
+              </Card>
+            </Box>
+          </Card>
         </Grid>
         <Grid item xs={12} className='mb-4'>
           <Card className='shadow-none p-4 h-auto border rounded-1xl' elevation={1}>
             <Box className='flex justify-between'>
-              <Text variant='h4' className='mt-4 font-medium'>
+              <Text variant='h4' className='mt-4  font-medium'>
                 Transactions Summary
               </Text>
             </Box>
             <Text variant='label1' className='text-gray-400'>
-              Showing 1 - {rows.length} out of {rows.length}
+              Showing 1 - 10 out of {rows.length}
             </Text>
             <DataGrid initialState={{
               pagination: {
                 paginationModel: { pageSize: 10 }
               },
-            }} className='mt-4 border-none text-gray-600 cursor-pointer' {...GridTableProps} />
+            }} className='mt-4 border-none  text-gray-600 cursor-pointer' {...GridTableProps} />
           </Card>
         </Grid>
       </Grid>
