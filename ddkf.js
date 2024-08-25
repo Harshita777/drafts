@@ -8,27 +8,33 @@ import { recentTransactionsColumns, statusTags } from '../../config/config';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard: React.FC = () => {
+    // Initialize hooks for Redux dispatch, navigation, and retrieving the state from the Redux store.
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const dashboardState = useSelector((state: any) => state.dashboardReducer);
 
+    // State to manage filtered data based on category selection.
     const [filteredData, setFilteredData] = useState<any[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string>('pending-all');
 
+    // Fetch dashboard data when the component is mounted or when the dispatch is updated.
     useEffect(() => {
         dispatch({ type: FETCH_DASHBOARD_REQUEST });
     }, [dispatch]);
 
+    // Filter the table data whenever dashboard data or the selected category changes.
     useEffect(() => {
         if (dashboardState.data) {
             filterTableData(selectedCategory);
         }
     }, [dashboardState.data, selectedCategory]);
 
+    // Function to refresh the dashboard data.
     const handleRefresh = () => {
         dispatch({ type: FETCH_DASHBOARD_REQUEST });
     };
 
+    // Handle click events for table rows, redirecting based on status.
     const handleCellClick = (params: any) => {
         if (params.row && params.row.status && params.row.status.label) {
             const status = params.row.status?.label;
@@ -38,10 +44,12 @@ const Dashboard: React.FC = () => {
         }
     };
 
+    // Function to filter data based on the selected category.
     const filterTableData = (category: string) => {
         const data = dashboardState.data;
         let filtered = [];
 
+        // Filter based on the selected category.
         if (category === 'pending-all') {
             filtered = data;
         } else if (category === 'telegraphics') {
@@ -53,10 +61,12 @@ const Dashboard: React.FC = () => {
         setFilteredData(filtered);
     };
 
+    // Handle click events for category cards.
     const handleCardClick = (category: string) => {
         setSelectedCategory(category);
     };
 
+    // Define table columns, including a custom rendering for the status column.
     const columns = [
         ...recentTransactionsColumns,
         {
@@ -71,6 +81,7 @@ const Dashboard: React.FC = () => {
         },
     ];
 
+    // Prepare table rows based on the filtered data.
     const rows = filteredData?.map((item: any, index: number) => ({
         id: index + 1,
         type: item.transactionType?.name,
@@ -80,6 +91,7 @@ const Dashboard: React.FC = () => {
         transactionId: item.transactionId,
     })) || [];
 
+    // Configuration for the DataGrid component.
     const GridTableProps = {
         rows: rows,
         columns: columns,
@@ -93,8 +105,10 @@ const Dashboard: React.FC = () => {
         hideFooterRowCount: true,
     };
 
+    // Check if there is data available for the dashboard.
     const hasDashboardData = dashboardState.data && dashboardState.data.length > 0;
 
+    // Function to get details for each category card based on the category type.
     const getCardDetails = (category: string) => {
         switch (category) {
             case 'pending-all':
@@ -123,6 +137,7 @@ const Dashboard: React.FC = () => {
 
     return (
         <Grid container spacing={2}>
+            {/* Header and category cards */}
             <Grid item xs={12}>
                 <Card className='h-auto' elevation={0} sx={{ p: 2 }}>
                     <Flex direction="row" justifyContent="space-between">
@@ -130,6 +145,7 @@ const Dashboard: React.FC = () => {
                         <Button type="button" onClick={handleRefresh} variant='text'>Refresh</Button>
                     </Flex>
 
+                    {/* Category cards */}
                     <Box className='flex gap-5'>
                         {['pending-all', 'telegraphics', 'withinbank'].map((category, index) => {
                             const details = getCardDetails(category);
@@ -156,7 +172,7 @@ const Dashboard: React.FC = () => {
                                     </Text>
                                     <Div className='flex justify-between'>
                                         <Text variant='label3' className="text-gray-500 font-medium">
-                                            <Text variant='label3' className='text-gray-800 font-semibold'>{details.files}</Text>   Files
+                                            <Text variant='label3' className='text-gray-800 font-semibold'>{details.files}</Text> Files
                                         </Text>
                                         <Text variant='label3' className="text-md font-semibold text-gray-600">
                                             {details.amount}
@@ -169,6 +185,7 @@ const Dashboard: React.FC = () => {
                 </Card>
             </Grid>
 
+            {/* Data grid for recent transactions */}
             {hasDashboardData && (
                 <Grid item xs={12}>
                     <Card className='shadow-none h-auto border rounded-1xl' elevation={0} sx={{ p: 2 }}>
@@ -190,9 +207,8 @@ const Dashboard: React.FC = () => {
                         )}
                     </Card>
                 </Grid>
-            )
-            }
-        </Grid >
+            )}
+        </Grid>
     );
 };
 
