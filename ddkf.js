@@ -1,26 +1,27 @@
-import React, { useState, useEffect } from 'react'
-import { Navigate, createBrowserRouter } from 'react-router-dom'
-import { LoginPage } from '../../page/LoginPage'
-import { ErrorPage, Layout } from '../../layout'
-import { DashboardPage } from '../../page/DashboardPage'
-import { EntitlementPage } from '../../page/EntitlementPage'
-import { WithinBankTransferPage } from '../../page/WithinBankTransferPage'
-import { TelegraphicTransferPage } from '../../page/TelegraphicTransferPage'
-import { PaymentsPage } from '../../page/PaymentsPage'
-import { FileUploadPage } from '../../page/FileUploadPage'
-import { FileVerifyPage } from '../../page/FileVerify'
-import { PendingActivitiesPage } from '../../page/PendingActivitiesPage'
-import { infoStore } from '../../redux/store/infoStore'
-import Unauthorized from '../../layout/Unauthorized'
-import { checkItemsStatus } from '../app.config'
+import React, { useState, useEffect } from 'react';
+import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { LoginPage } from '../../page/LoginPage';
+import { ErrorPage, Layout } from '../../layout';
+import { DashboardPage } from '../../page/DashboardPage';
+import { EntitlementPage } from '../../page/EntitlementPage';
+import { WithinBankTransferPage } from '../../page/WithinBankTransferPage';
+import { TelegraphicTransferPage } from '../../page/TelegraphicTransferPage';
+import { PaymentsPage } from '../../page/PaymentsPage';
+import { FileUploadPage } from '../../page/FileUploadPage';
+import { FileVerifyPage } from '../../page/FileVerify';
+import { PendingActivitiesPage } from '../../page/PendingActivitiesPage';
+import { infoStore } from '../../redux/store/infoStore';
+import Unauthorized from '../../layout/Unauthorized';
+import { checkItemsStatus } from '../app.config';
 
-type SecureRoute = {
-    allowedPages?: string[];
-}
+type SecureRouteProps = {
+    element: React.ReactElement;
+    allowedRoles?: string[];
+    redirectPath: string;
+    entitlementKey?: string; // New prop to specify entitlement key
+};
 
-const SecureRoute = (props) => {
-    const { element, allowedRoles, redirectPath } = props;
-
+const SecureRoute: React.FC<SecureRouteProps> = ({ element, allowedRoles, redirectPath, entitlementKey }) => {
     const token = infoStore.getAccessToken('jwtToken');
     const role = infoStore.getRole();
     const [redirect, setRedirect] = useState(false);
@@ -39,16 +40,19 @@ const SecureRoute = (props) => {
     }
 
     if (allowedRoles && !allowedRoles.includes(role)) {
+        return <Navigate to={redirectPath} replace />;
+    }
 
-        return <Navigate to={redirectPath} replace />
-
+    // Check entitlement for specific route
+    if (entitlementKey && !entitlements[entitlementKey]) {
+        return <Navigate to="/unauthorized" replace />;
     }
 
     return element;
 };
 
 const entitlementJSON = infoStore.getEntitlement();
-const entitlementData = entitlementJSON && JSON.parse(infoStore.getEntitlement()) || [];
+const entitlementData = (entitlementJSON && JSON.parse(entitlementJSON)) || [];
 const entitlements: any = checkItemsStatus(entitlementData, [
     'Pending Authorization',
     'Transaction Summary',
@@ -72,38 +76,85 @@ export const routes = createBrowserRouter(
         },
         {
             path: "/",
-            element: <SecureRoute element={<Layout />}
-                allowedRoles={['Maker', 'Authorizer']}
-                redirectPath="/entitlement" />,
+            element: <SecureRoute element={<Layout />} allowedRoles={['Maker', 'Authorizer']} redirectPath="/entitlement" />,
             errorElement: <ErrorPage />,
             children: [
                 {
                     path: 'dashboard',
-                    element: <DashboardPage />
+                    element: (
+                        <SecureRoute
+                            element={<DashboardPage />}
+                            allowedRoles={['Maker', 'Authorizer']}
+                            redirectPath="/unauthorized"
+                            entitlementKey="Dashboard" // Check entitlement for Dashboard
+                        />
+                    )
                 },
                 {
                     path: 'dashboard/payments',
-                    element: <PaymentsPage entitlements={entitlements} />,
+                    element: (
+                        <SecureRoute
+                            element={<PaymentsPage entitlements={entitlements} />}
+                            allowedRoles={['Maker', 'Authorizer']}
+                            redirectPath="/unauthorized"
+                            entitlementKey="Transaction Summary" // Check entitlement for Payments
+                        />
+                    )
                 },
                 {
                     path: 'dashboard/payments/within-bank-transfer',
-                    element: <WithinBankTransferPage  />
+                    element: (
+                        <SecureRoute
+                            element={<WithinBankTransferPage />}
+                            allowedRoles={['Maker', 'Authorizer']}
+                            redirectPath="/unauthorized"
+                            entitlementKey="Within Bank Transfer" // Check entitlement for Within Bank Transfer
+                        />
+                    )
                 },
                 {
                     path: 'dashboard/payments/telegraphic-transfer',
-                    element: <TelegraphicTransferPage />
+                    element: (
+                        <SecureRoute
+                            element={<TelegraphicTransferPage />}
+                            allowedRoles={['Maker', 'Authorizer']}
+                            redirectPath="/unauthorized"
+                            entitlementKey="Telegraphic Transfer" // Check entitlement for Telegraphic Transfer
+                        />
+                    )
                 },
                 {
                     path: 'dashboard/activities',
-                    element: <PendingActivitiesPage />,
+                    element: (
+                        <SecureRoute
+                            element={<PendingActivitiesPage />}
+                            allowedRoles={['Maker', 'Authorizer']}
+                            redirectPath="/unauthorized"
+                            entitlementKey="Pending Authorization" // Check entitlement for Pending Activities
+                        />
+                    )
                 },
                 {
                     path: 'dashboard/payments/file-upload',
-                    element: <FileUploadPage />
+                    element: (
+                        <SecureRoute
+                            element={<FileUploadPage />}
+                            allowedRoles={['Maker', 'Authorizer']}
+                            redirectPath="/unauthorized"
+                            entitlementKey="File Upload" // Check entitlement for File Upload
+                        />
+                    )
                 },
                 {
                     path: 'dashboard/payments/file-verify',
-                    element: <FileVerifyPage />
+                    element: (
+                        <SecureRoute
+                            element={<FileVerifyPage />}
+                            allowedRoles={['Maker', 'Authorizer']}
+                            redirectPath="/unauthorized"
+                            entitlementKey="File Upload" // Check entitlement for File Verify
+                        />
+                    )
                 },
             ]
         },
@@ -114,7 +165,14 @@ export const routes = createBrowserRouter(
             children: [
                 {
                     path: 'entitlement',
-                    element: <EntitlementPage />
+                    element: (
+                        <SecureRoute
+                            element={<EntitlementPage />}
+                            allowedRoles={['Administrator']}
+                            redirectPath="/unauthorized"
+                            entitlementKey="Services Portal" // Check entitlement for Entitlement Page
+                        />
+                    )
                 },
             ]
         },
@@ -127,6 +185,6 @@ export const routes = createBrowserRouter(
             element: <ErrorPage />
         }
     ]
-)
+);
 
-export default routes
+export default routes;
