@@ -1,198 +1,132 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Box, Card, Grid, GridTable, Text, Tag, Div, DataGrid, Flex } from '@enbdleap/react-ui';
-import { useNavigate } from 'react-router-dom';
-import { FETCH_TRANSACTION_SUMMARY_REQUEST } from '../../../redux/actions/DashboardActions';
-import { statusTags, transactionSummaryColumns } from '../../../config/config';
-import { infoStore } from '../../../services/infoStore';
+import React, { useState, useEffect } from 'react'
+import { Navigate, createBrowserRouter } from 'react-router-dom'
+import { LoginPage } from '../../page/LoginPage'
+import { ErrorPage, Layout } from '../../layout'
+import { DashboardPage } from '../../page/DashboardPage'
+import { EntitlementPage } from '../../page/EntitlementPage'
+import { WithinBankTransferPage } from '../../page/WithinBankTransferPage'
+import { TelegraphicTransferPage } from '../../page/TelegraphicTransferPage'
+import { PaymentsPage } from '../../page/PaymentsPage'
+import { FileUploadPage } from '../../page/FileUploadPage'
+import { FileVerifyPage } from '../../page/FileVerify'
+import { PendingActivitiesPage } from '../../page/PendingActivitiesPage'
+import { infoStore } from '../../redux/store/infoStore'
+import Unauthorized from '../../layout/Unauthorized'
+import { checkItemsStatus } from '../app.config'
 
-interface PaymentProps {
-  transferType: string;
+type SecureRoute = {
+    allowedPages?: string[];
 }
 
-const Payment: React.FC<PaymentProps> = ({ transferType }) => {
-  // Initialize dispatch for Redux actions
-  const dispatch = useDispatch();
-  
-  // Initialize navigation hook for routing
-  const navigate = useNavigate();
-  
-  // Access state from Redux store
-  const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
-  
-  // Fetch user ID from infoStore service
-  const userId = infoStore.getSubscriberId()
+const SecureRoute = (props) => {
+    const { element, allowedRoles, redirectPath } = props;
 
-  // Effect to dispatch action on component mount or userId change
-  useEffect(() => {
-    if(userId){
-      dispatch({
-        type: FETCH_TRANSACTION_SUMMARY_REQUEST,
-        payload: { userId: userId }
-      });
+    const token = infoStore.getAccessToken('jwtToken');
+    const role = infoStore.getRole();
+    const [redirect, setRedirect] = useState(false);
+
+    useEffect(() => {
+        if (redirect) {
+            const timer = setTimeout(() => {
+                setRedirect(false);
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [redirect]);
+
+    if (!token) {
+        return <Navigate to="/login" />;
     }
-  }, [dispatch, userId]);
 
-  // Function to handle row clicks in the data grid
-  const handleCellClick = (params: any) => {
-    if (params.row && params.row.status && params.row.status.label) {
-      const status = params.row.status?.label;
-      const type = params.row.fileType;
-      const typeUrl = type.toString().toLowerCase().split(' ').join('-');
-      const rfid = params.row.referenceId
+    if (allowedRoles && !allowedRoles.includes(role)) {
 
-      // Conditional routing based on the transaction status and type
-      if (((status === 'Pending Authorization') || (status === 'Ready for Verification')) && type === "File Upload") {
-        navigate(`/dashboard/payments/file-verify`, { state: rfid });
-      } else if (status === 'Pending Authorization' && (type === "Telegraphic Transfer" || type === "Within Bank Transfer")) {
-        navigate(`/dashboard/payments/${typeUrl}?rfId=${rfid}`);
-      }
+        return <Navigate to={redirectPath} replace />
+
     }
-  };
 
-  // Filter and map transaction data based on transferType prop
-  const rows = transactionSummaryState.data
-    ? transactionSummaryState.data
-      .filter((item: any) => {
-        if (transferType === "all") return true;
-        if (transferType === "single") {
-          return item.transactionType.name === "Telegraphic Transfer" ||
-            item.transactionType.name === "Within Bank Transfer";
-        }
-        if (transferType === "file-upload") {
-          return item.transactionType.name === "File Upload";
-        }
-        return false;
-      })
-      .map((item: any, index: number) => {
-        return {
-          id: index + 1,
-          date: item.submittedAt,
-          amount: item.debitAccount?.balance,
-          customer: item.additionalDetails.customerReference,
-          fileType: item.transactionType?.name,
-          status: statusTags[item.transactionStatus.status],
-          transactionId: item.transactionId,
-          referenceId: item.referenceId,
-          total: "..",
-          rejection: ".."
-        }
-      })
-    : [];
-
-  // Properties configuration for the GridTable component
-  const GridTableProps = {
-    rows: rows,
-    columns: [
-      ...transactionSummaryColumns,
-      {
-        field: 'status',
-        flex: 1,
-        headerName: 'Status',
-        renderCell: (params: any) => (
-          <Flex width={200}>
-            <Tag sx={{ maxWidth: '160px' }} size='medium' type={params.value?.type ? params.value.type : ""} label={params.value?.label} />
-          </Flex>
-        ),
-      },
-      {
-        field: 'rejection',
-        flex: 1,
-        headerName: 'Rejection Reason',
-      }
-    ],
-    hidePagination: true,
-    checkboxSelection: false,
-    autoPageSize: false,
-    disableColumnMenu: true,
-    autoHeight: true,
-    onRowClick: handleCellClick,
-    disableColumnFilter: true,
-    hideFooterRowCount: false,
-  };
-
-  // Render component UI
-  return (
-    <>
-      <Grid container className='w-full h-auto shadow-bottom' margin={0}>
-        <Card className='bg-blue-50 w-full flex justify-between'></Card>
-      </Grid>
-      <Grid container spacing={2} className='px-7 mt-28'>
-        <Grid item xs={12}>
-          <Card className='flex shadow-none p-2 h-auto border rounded-1xl'>
-            <Box className=' flex flex-1 p-3 gap-5'>
-              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
-                <Box className='flex justify-between'>
-                  <Text variant='h5' className='font-bold'>
-                    {transactionSummaryState.allTransaction}
-                  </Text>
-                </Box>
-                <Text variant='label3' className='text-gray-500 font-medium'>
-                  Total Transaction
-                </Text>
-                <Div className='flex justify-between'>
-                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                    {transactionSummaryState.allAmount} AED
-                  </Text>
-                </Div>
-              </Card>
-            </Box>
-            <Box className='flex flex-1 p-3 gap-5'>
-              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
-                <Box className='flex justify-between'>
-                  <Text variant='h5' className='font-bold'>
-                    {transactionSummaryState.individualTransaction}
-                  </Text>
-                </Box>
-                <Text variant='label3' className='text-gray-500 font-medium'>
-                  Single Transaction
-                </Text>
-                <Div className='flex justify-between'>
-                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                    {transactionSummaryState.individualAmount} AED
-                  </Text>
-                </Div>
-              </Card>
-            </Box>
-            <Box className='flex flex-1 p-3 gap-5'>
-              <Card className='shadow-none border-solid  w-full border mt-2 p-3 rounded-lg'>
-                <Box className='flex justify-between'>
-                  <Text variant='h5' className='font-bold'>
-                    {transactionSummaryState.filesTransaction}
-                  </Text>
-                </Box>
-                <Text variant='label3' className='text-gray-500 font-medium'>
-                  Files Transaction
-                </Text>
-                <Div className='flex justify-between'>
-                  <Text variant='label3' className='text-md font-semibold text-gray-500'>
-                    {transactionSummaryState.fileAmount} AED
-                  </Text>
-                </Div>
-              </Card>
-            </Box>
-          </Card>
-        </Grid>
-        <Grid item xs={12} className='mb-4'>
-          <Card className='shadow-none p-4 h-auto border rounded-1xl' elevation={1}>
-            <Box className='flex justify-between'>
-              <Text variant='h4' className='mt-4  font-medium'>
-                Transactions Summary
-              </Text>
-            </Box>
-            <Text variant='label1' className='text-gray-400'>
-              Showing 1 - 10 out of {rows.length}
-            </Text>
-            <DataGrid initialState={{
-              pagination: {
-                paginationModel: { pageSize: 10 }
-              },
-            }} className='mt-4 border-none  text-gray-600 cursor-pointer' {...GridTableProps} />
-          </Card>
-        </Grid>
-      </Grid>
-    </>
-  );
+    return element;
 };
 
-export default Payment;
+const entitlementJSON = infoStore.getEntitlement();
+const entitlementData = entitlementJSON && JSON.parse(infoStore.getEntitlement()) || [];
+const entitlements: any = checkItemsStatus(entitlementData, [
+    'Pending Authorization',
+    'Transaction Summary',
+    'Dashboard',
+    'Services Portal',
+    'File Upload',
+    'Within Bank Transfer',
+    'Telegraphic Transfer'
+]);
+
+/** Application Routes */
+export const routes = createBrowserRouter(
+    [
+        {
+            path: "/",
+            element: <Navigate to="/login" />
+        },
+        {
+            path: "/login",
+            element: <LoginPage />
+        },
+        {
+            path: "/",
+            element: <SecureRoute element={<Layout />}
+                allowedRoles={['Maker', 'Authorizer']}
+                redirectPath="/entitlement" />,
+            errorElement: <ErrorPage />,
+            children: [
+                {
+                    path: 'dashboard',
+                    element: <DashboardPage />
+                },
+                {
+                    path: 'dashboard/payments',
+                    element: <PaymentsPage entitlements={entitlements} />,
+                },
+                {
+                    path: 'dashboard/payments/within-bank-transfer',
+                    element: <WithinBankTransferPage  />
+                },
+                {
+                    path: 'dashboard/payments/telegraphic-transfer',
+                    element: <TelegraphicTransferPage />
+                },
+                {
+                    path: 'dashboard/activities',
+                    element: <PendingActivitiesPage />,
+                },
+                {
+                    path: 'dashboard/payments/file-upload',
+                    element: <FileUploadPage />
+                },
+                {
+                    path: 'dashboard/payments/file-verify',
+                    element: <FileVerifyPage />
+                },
+            ]
+        },
+        {
+            path: "/",
+            element: <SecureRoute element={<Layout />} allowedRoles={['Administrator']} redirectPath="/dashboard" />,
+            errorElement: <ErrorPage />,
+            children: [
+                {
+                    path: 'entitlement',
+                    element: <EntitlementPage />
+                },
+            ]
+        },
+        {
+            path: "/unauthorized",
+            element: <Unauthorized />
+        },
+        {
+            path: "*",
+            element: <ErrorPage />
+        }
+    ]
+)
+
+export default routes
