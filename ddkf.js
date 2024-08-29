@@ -1,48 +1,44 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Box, Card, Grid, GridTable, Text, Tag, Div, DataGrid, Flex } from '@enbdleap/react-ui';
+import { Box, Card, Grid, Text, Div, Tag, DataGrid, IconButton } from '@enbdleap/react-ui';
 import { useNavigate } from 'react-router-dom';
 import { FETCH_TRANSACTION_SUMMARY_REQUEST } from '../../../redux/actions/DashboardActions';
 import { statusTags, transactionSummaryColumns } from '../../../config/config';
 import { infoStore } from '../../../services/infoStore';
 
-interface PaymentProps {
+// Define the interface for the component props
+interface PendingActivitiesProps {
 	transferType: string;
 }
 
-const Payment: React.FC<PaymentProps> = ({ transferType }) => {
-	// Initialize dispatch for Redux actions
+// Main component definition
+const PendingActivities: React.FC<PendingActivitiesProps> = ({ transferType }) => {
 	const dispatch = useDispatch();
-
-	// Initialize navigation hook for routing
 	const navigate = useNavigate();
 
-	// Access state from Redux store
+	// Accessing the transaction summary state from the Redux store
 	const transactionSummaryState = useSelector((state: any) => state.transactionSummaryReducer);
 
-	// Fetch user ID from infoStore service
-	const subscriberId = infoStore.getSubscriberId()
+	// Getting userId from a custom info store service
+	const subscriberId = infoStore.getSubscriberId();
 
-	// Effect to dispatch action on component mount or userId change
+	// Fetch transaction summary data when the component mounts or when the userId changes
 	useEffect(() => {
 		if (subscriberId) {
-			dispatch({
-				type: FETCH_TRANSACTION_SUMMARY_REQUEST,
-				payload: { subscriberId }
-			});
+			dispatch({ type: FETCH_TRANSACTION_SUMMARY_REQUEST, payload: { subscriberId } });
 		}
 	}, [dispatch, subscriberId]);
 
-	// Function to handle row clicks in the data grid
+	// Handle row click based on the status and transaction type
 	const handleCellClick = (params: any) => {
 		if (params.row && params.row.status && params.row.status.label) {
 			const status = params.row.status?.label;
 			const type = params.row.fileType;
 			const typeUrl = type.toString().toLowerCase().split(' ').join('-');
-			const rfid = params.row.referenceId
+			const rfid = params.row.referenceId;
 
-			// Conditional routing based on the transaction status and type
-			if (((status === 'Ready for Verification')) && type === "File Upload") {
+			// Redirecting based on the transaction type and status
+			if (status === 'Ready for Verification' && type === "File Upload") {
 				navigate(`/dashboard/payments/file-verify`, { state: rfid });
 			} else if (status === 'Pending Authorization' && (type === "Telegraphic Transfer" || type === "Within Bank Transfer")) {
 				navigate(`/dashboard/payments/${typeUrl}?rfId=${rfid}`);
@@ -52,61 +48,69 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
 		}
 	};
 
-	// Filter and map transaction data based on transferType prop
-	const rows = transactionSummaryState.data
-		? transactionSummaryState.data
-			.filter((item: any) => {
-				if (transferType === "all") return true;
-				if (transferType === "single") {
-					return item.transactionType.name === "Telegraphic Transfer" ||
-						item.transactionType.name === "Within Bank Transfer";
-				}
-				if (transferType === "file-upload") {
-					return item.transactionType.name === "File Upload";
-				}
-				return false;
-			})
-			.map((item: any, index: number) => {
-				return {
-					id: index + 1,
-					date: item.submittedAt,
-					amount: item.debitAccount?.balance,
-					customer: item.additionalDetails.customerReference,
-					fileType: item.transactionType?.name,
-					status: statusTags[item.transactionStatus.status],
-					transactionId: item.transactionId,
-					referenceId: item.referenceId,
-					total: "..",
-					rejection: item.comment || "-"
-				}
-			})
-		: [];
+	// Filter the data based on the transfer type
+	const filteredData = transactionSummaryState.data || [];
+	const allTransactions = filteredData.filter((item: any) =>
+		(item.transactionType.name.includes("Telegraphic Transfer") ||
+			item.transactionType.name.includes("Within Bank Transfer") ||
+			item.transactionType.name.includes("File Upload")) &&
+		(item.transactionStatus.status === 'Pending Authorization' ||
+			item.transactionStatus.status === 'Ready for Verification')
+	);
 
-	// Properties configuration for the GridTable component
+	// Further filter rows based on the selected transfer type
+	const filteredRows = allTransactions.filter((item: any) => {
+		if (transferType === 'All') {
+			return true;
+		} else if (transferType === 'Within Bank Transfer') {
+			return item.transactionType.name.includes("File Upload") ||
+				item.transactionType.name.includes("Within Bank Transfer");
+		} else if (transferType === 'Telegraphic Transfer') {
+			return item.transactionType.name.includes("Telegraphic Transfer");
+		}
+		return false;
+	}).map((item: any, index: number) => ({
+		id: index + 1,
+		date: item.submittedAt,
+		amount: item.paymentDetails?.paymentAmount,
+		customer: item.additionalDetails.customerReference,
+		fileType: item.transactionType?.name,
+		status: statusTags[item.transactionStatus.status],
+		transactionId: item.transactionId,
+		referenceId: item.referenceId,
+		total: "-",
+		rejection: item.comment || "-"
+	}));
+
+	// Utility function to count rows by status
+	const countByStatus = (status: string) =>
+		filteredRows.filter((item: any) => item.status.label === status).length;
+
+	// DataGrid props configuration
 	const GridTableProps = {
-		rows: rows,
+		rows: filteredRows.reverse(),
 		columns: [
 			...transactionSummaryColumns,
 			{
 				field: 'status',
-				flex: 1,
+				width: 190,
 				headerName: 'Status',
 				renderCell: (params: any) => (
-					<Flex width={200}>
-						<Tag sx={{ maxWidth: '160px' }} size='medium' type={params.value?.type ? params.value.type : ""} label={params.value?.label} />
-					</Flex>
+					<div>
+						<Tag sx={{ maxWidth: '160px' }} size='medium' type={params?.value?.type} label={params?.value?.label} />
+					</div>
 				),
 			},
 			{
 				field: 'rejection',
 				flex: 1,
-				headerName: 'Rejection Reason',
+				headerName: 'Comments',
 			}
 		],
-		hidePagination: true,
+		hidePagination: false,
 		checkboxSelection: false,
 		autoPageSize: false,
-		disableColumnMenu: false,
+		disableColumnMenu: true,
 		autoHeight: true,
 		onRowClick: handleCellClick,
 		disableColumnFilter: false,
@@ -134,12 +138,14 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
 		}
 	];
 
-	// Render component UI
 	return (
 		<>
+			{/* Summary header section */}
 			<Grid container className='w-full h-auto shadow-bottom' margin={0}>
 				<Card className='bg-blue-50 w-full flex justify-between'></Card>
 			</Grid>
+
+			{/* Main content grid layout */}
 			<Grid container spacing={2} className='px-7 mt-28'>
 				<Grid item xs={12}>
 					<Box className='flex gap-5'>
@@ -147,7 +153,7 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
 							<Card
 								key={index}
 								className={`shadow-none border-solid w-full border mt-2 p-3 cursor-pointer rounded-lg`}
-								onClick={() => (detail.category)}
+							// onClick={() => filteredData(detail.category)}
 							>
 								<Div className='flex justify-between'>
 									<Div>
@@ -163,7 +169,9 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
 
 									<Box className='flex justify-between items-center'>
 										<Text variant='h3' className='font-semibold font-xl'>
-											{detail.count}
+											{detail.count}  <Text variant='label2' className='text-md mt-3 font-semibold text-gray-500'>
+												Transactions
+											</Text>
 										</Text>
 									</Box>
 								</Div>
@@ -173,21 +181,27 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
 						))}
 					</Box>
 				</Grid>
+
+				{/* Data Grid Section */}
 				<Grid item xs={12} className='mb-4'>
-					<Card className='shadow-none p-4 h-auto border rounded-1xl' elevation={1}>
+					<Card className='shadow-none p-4 h-auto border rounded-1xl' elevation={3}>
 						<Box className='flex justify-between'>
-							<Text variant='h4' className='mt-4  font-medium'>
+							<Text variant='h4' className='mt-4 font-medium'>
 								Transactions Summary
 							</Text>
 						</Box>
 						<Text variant='label1' className='text-gray-400'>
-							Showing 1 - 10 out of {rows.length}
+							Showing 1 - 10 out of {filteredRows.length}
 						</Text>
-						<DataGrid initialState={{
-							pagination: {
-								paginationModel: { pageSize: 10 }
-							},
-						}} className='mt-4 border-none  text-gray-600 cursor-pointer' {...GridTableProps} />
+
+						{/* Display the data grid if there are rows to show */}
+						{filteredRows.length > 0 && (
+							<DataGrid
+								initialState={{ pagination: { paginationModel: { pageSize: 10 } } }}
+								className='mt-4 text-gray-600 border-none  z-0 cursor-pointer '
+								{...GridTableProps}
+							/>
+						)}
 					</Card>
 				</Grid>
 			</Grid>
@@ -195,4 +209,4 @@ const Payment: React.FC<PaymentProps> = ({ transferType }) => {
 	);
 };
 
-export default Payment;
+export default PendingActivities;
