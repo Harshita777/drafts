@@ -1,14 +1,3 @@
-const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: currency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-    }).format(amount);
-};
-
-
-
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FETCH_DASHBOARD_REQUEST } from '../../redux/actions/DashboardActions';
@@ -55,8 +44,17 @@ const Dashboard: React.FC = () => {
         setFilteredData(filtered);
     };
 
-    const handleCardClick = (category: string) => {
-        setSelectedCategory(category);
+    // Mock function to convert AED to other currencies
+    const convertCurrency = (amount: number, fromCurrency: string, toCurrency: string) => {
+        // This is a mock conversion logic. Replace this with actual conversion logic or API call.
+        const conversionRates: Record<string, number> = {
+            USD: 0.27,
+            EUR: 0.24,
+            INR: 20.0,
+            AED: 1,
+        };
+        const convertedAmount = amount * (conversionRates[toCurrency] / conversionRates[fromCurrency]);
+        return convertedAmount;
     };
 
     const formatCurrency = (amount: number, currency: string = 'AED') => {
@@ -87,15 +85,23 @@ const Dashboard: React.FC = () => {
         },
     ];
 
-    const rows = filteredData?.map((item: any, index: number) => ({
-        id: index + 1,
-        type: item.transactionType?.name,
-        date: item.initiateDate,
-        amount: formatCurrency(item.paymentAmount, item.paymentCurrency || 'AED'),
-        status: statusTags[item.transactionStatus.status],
-        transactionId: item.transactionId,
-        reference: item.referenceId,
-    })) || [];
+    const rows = filteredData?.map((item: any, index: number) => {
+        const paymentCurrency = item.paymentCurrency || 'AED'; // Default to AED if no currency provided
+        const paymentAmount = item.paymentAmount || 0;
+
+        // Convert AED to the currency provided in the response
+        const convertedAmount = convertCurrency(paymentAmount, 'AED', paymentCurrency);
+
+        return {
+            id: index + 1,
+            type: item.transactionType?.name,
+            date: item.initiateDate,
+            amount: formatCurrency(convertedAmount, paymentCurrency),
+            status: statusTags[item.transactionStatus.status],
+            transactionId: item.transactionId,
+            reference: item.referenceId,
+        };
+    }) || [];
 
     const GridTableProps = {
         rows: rows.reverse(),
