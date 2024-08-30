@@ -1,1 +1,3 @@
-Hi, I have different currencies in my database and amount in number format like 9999999 I want a javascript function to convert the amount in monetary format based no currency i provide
+function formatCurrency(amount: number, currency: string) {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+}
